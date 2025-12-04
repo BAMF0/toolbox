@@ -1,0 +1,35 @@
+contexts:
+  node:
+    commands:
+      build: "npm run build"
+      test: "npm test"
+      start: "npm start"
+      dev: "npm run dev"
+      lint: "npm run lint"
+      install: "npm install"
+  
+  go:
+    commands:
+      build: "go build"
+      test: "go test ./..."
+      run: "go run ."
+      install: "go mod download"
+      lint: "golangci-lint run"
+      fmt: "go fmt ./..."
+  
+  python:
+    commands:
+      test: "pytest"
+      lint: "ruff check ."
+      fmt: "black ."
+      install: "pip install -r requirements.txt"
+      run: "python main.py"
+  
+  rust:
+    commands:
+      build: "cargo build"
+      test: "cargo test"
+      run: "cargo run"
+      install: "cargo fetch"
+      lint: "cargo clippy"
+      fmt: "cargo fmt"
