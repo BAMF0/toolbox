@@ -149,6 +149,15 @@ contexts:
 3. `~/.toolbox/config.yaml` in home directory
 4. Built-in defaults
 
+> **💡 Tip**: For Go projects with a specific structure (like `cmd/myapp/`), customize in `.toolbox.yaml`:
+> ```yaml
+> contexts:
+>   go:
+>     commands:
+>       build: "go build -o bin/myapp ./cmd/myapp"
+>       run: "go run ./cmd/myapp"
+> ```
+
 ---
 
 ## 🏗️ Architecture

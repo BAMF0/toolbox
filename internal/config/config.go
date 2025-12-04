@@ -90,9 +90,9 @@ func getDefaultConfig() *Config {
 			},
 			"go": {
 				Commands: map[string]string{
-					"build":   "go build",
+					"build":   "go build ./...",
 					"test":    "go test ./...",
-					"run":     "go run .",
+					"run":     "go run ./cmd/...",
 					"install": "go mod download",
 					"lint":    "golangci-lint run",
 					"fmt":     "go fmt ./...",
