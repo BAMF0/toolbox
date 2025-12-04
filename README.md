@@ -1,5 +1,7 @@
 # ToolBox (tb) 🧰
 
+(Built as a test project with GitHub Copilot)
+
 **Context-aware command aliasing for developers**
 
 ToolBox is a CLI tool that provides intelligent command shortcuts based on your project context. Define simple commands like `tb build`, `tb test`, or `tb deploy` that automatically expand to the correct commands for your current project type.
@@ -274,7 +276,6 @@ contexts:
 
 - 🐛 **Issues**: [GitHub Issues](https://github.com/bamf0/toolbox/issues)
 - 💬 **Discussions**: [GitHub Discussions](https://github.com/bamf0/toolbox/discussions)  
-- 📧 **Email**: [your-email] (optional)
 
 ---
 
