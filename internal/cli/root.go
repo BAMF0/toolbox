@@ -26,7 +26,8 @@ var rootCmd = &cobra.Command{
 	
 Define simple commands like 'tb build' or 'tb test' that automatically expand
 to the correct commands for your current project type (Node.js, Go, Python, etc.).`,
-	SilenceUsage: true,
+	SilenceUsage:  true,
+	SilenceErrors: true,
 }
 
 func Execute() error {
