@@ -88,11 +88,11 @@ func showHelp(cmd *cobra.Command, args []string) error {
 	// Display help
 	fmt.Printf("Command: %s\n", commandName)
 	fmt.Printf("Context: %s\n\n", detectedCtx)
-	
+
 	if description, hasDesc := ctxConfig.Descriptions[commandName]; hasDesc {
 		fmt.Printf("Description:\n  %s\n\n", description)
 	}
-	
+
 	fmt.Printf("Executes:\n  %s\n", cmdString)
 
 	return nil
@@ -113,12 +113,12 @@ func showCommandInAllContexts(commandName string, cfg *config.Config) error {
 	}
 
 	fmt.Printf("Command '%s' is available in the following contexts:\n\n", commandName)
-	
+
 	sort.Strings(foundContexts)
 	for _, ctxName := range foundContexts {
 		ctxConfig := cfg.Contexts[ctxName]
 		cmdString := ctxConfig.Commands[commandName]
-		
+
 		fmt.Printf("Context: %s\n", ctxName)
 		if desc, hasDesc := ctxConfig.Descriptions[commandName]; hasDesc {
 			fmt.Printf("  Description: %s\n", desc)

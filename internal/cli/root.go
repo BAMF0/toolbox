@@ -62,7 +62,7 @@ func Execute() error {
 			"completion": true,
 			"help":       true,
 		}
-		
+
 		if !knownCommands[potentialCmd] {
 			// This might be a dynamic command
 			for _, arg := range args[1:] {
@@ -74,7 +74,7 @@ func Execute() error {
 			}
 		}
 	}
-	
+
 	return rootCmd.Execute()
 }
 

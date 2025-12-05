@@ -155,7 +155,7 @@ func boolToStatus(enabled bool) string {
 func getPluginNameCompletions(toComplete string) []string {
 	pm := getPluginManager()
 	metadata := pm.GetMetadata()
-	
+
 	var suggestions []string
 	for name := range metadata {
 		if strings.HasPrefix(name, toComplete) {

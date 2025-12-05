@@ -9,15 +9,15 @@ import (
 // TestUbuntuPlugin_Basic tests basic plugin functionality
 func TestUbuntuPlugin_Basic(t *testing.T) {
 	plugin := NewUbuntuPlugin()
-	
+
 	if plugin.Name() != "ubuntu" {
 		t.Errorf("expected name 'ubuntu', got %q", plugin.Name())
 	}
-	
+
 	if plugin.Version() != "1.0.0" {
 		t.Errorf("expected version '1.0.0', got %q", plugin.Version())
 	}
-	
+
 	if err := plugin.Validate(); err != nil {
 		t.Errorf("validation failed: %v", err)
 	}
@@ -27,21 +27,21 @@ func TestUbuntuPlugin_Basic(t *testing.T) {
 func TestUbuntuPlugin_Contexts(t *testing.T) {
 	plugin := NewUbuntuPlugin()
 	contexts := plugin.Contexts()
-	
+
 	if len(contexts) == 0 {
 		t.Fatal("expected at least one context")
 	}
-	
+
 	ctx, exists := contexts["ubuntu-packaging"]
 	if !exists {
 		t.Fatal("expected 'ubuntu-packaging' context")
 	}
-	
+
 	expectedCommands := []string{
 		"gbranch", "ppa-status", "dch-auto", "ubuild",
 		"sb-auto", "dput-auto", "build", "lint",
 	}
-	
+
 	for _, cmd := range expectedCommands {
 		if _, exists := ctx.Commands[cmd]; !exists {
 			t.Errorf("expected command %q not found", cmd)
@@ -52,7 +52,7 @@ func TestUbuntuPlugin_Contexts(t *testing.T) {
 // TestUbuntuPlugin_Detect tests project detection
 func TestUbuntuPlugin_Detect(t *testing.T) {
 	plugin := NewUbuntuPlugin()
-	
+
 	tests := []struct {
 		name     string
 		setup    func(string)
@@ -82,18 +82,18 @@ func TestUbuntuPlugin_Detect(t *testing.T) {
 			expected: false,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			tt.setup(tmpDir)
-			
+
 			ctx, detected := plugin.Detect(tmpDir)
-			
+
 			if detected != tt.expected {
 				t.Errorf("expected detection=%v, got %v", tt.expected, detected)
 			}
-			
+
 			if detected && ctx != "ubuntu-packaging" {
 				t.Errorf("expected context 'ubuntu-packaging', got %q", ctx)
 			}
@@ -136,19 +136,19 @@ func TestParsePPAName_Merge(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			info, err := ParsePPAName(tt.ppaName)
-			
+
 			if tt.expectError && err == nil {
 				t.Error("expected error, got nil")
 			}
-			
+
 			if !tt.expectError && err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
-			
+
 			if !tt.expectError && info != nil {
 				if info.Release != tt.expected.Release {
 					t.Errorf("release: expected %q, got %q", tt.expected.Release, info.Release)
@@ -202,19 +202,19 @@ func TestParsePPAName_SRU(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			info, err := ParsePPAName(tt.ppaName)
-			
+
 			if tt.expectError && err == nil {
 				t.Error("expected error, got nil")
 			}
-			
+
 			if !tt.expectError && err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
-			
+
 			if !tt.expectError && info != nil {
 				if info.Release != tt.expected.Release {
 					t.Errorf("release: expected %q, got %q", tt.expected.Release, info.Release)
@@ -265,19 +265,19 @@ func TestParsePPAName_Bug(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			info, err := ParsePPAName(tt.ppaName)
-			
+
 			if tt.expectError && err == nil {
 				t.Error("expected error, got nil")
 			}
-			
+
 			if !tt.expectError && err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
-			
+
 			if !tt.expectError && info != nil {
 				if info.Type != tt.expected.Type {
 					t.Errorf("type: expected %q, got %q", tt.expected.Type, info.Type)
@@ -297,13 +297,13 @@ func TestParsePPAName_Invalid(t *testing.T) {
 		"invalid",
 		"no-bug-id",
 		"UPPERCASE-lp123",
-		"noble-lp123",           // missing project
-		"lp123-noble",           // wrong order
-		"noble-project-",        // incomplete
-		"noble-project-lp",      // no bug number
-		"noble-project-lpXYZ",   // non-numeric bug ID
+		"noble-lp123",         // missing project
+		"lp123-noble",         // wrong order
+		"noble-project-",      // incomplete
+		"noble-project-lp",    // no bug number
+		"noble-project-lpXYZ", // non-numeric bug ID
 	}
-	
+
 	for _, ppaName := range invalid {
 		t.Run(ppaName, func(t *testing.T) {
 			_, err := ParsePPAName(ppaName)
@@ -347,14 +347,14 @@ func TestPPAInfo_GetPPATarget(t *testing.T) {
 			expected: "ppa:$(whoami)/noble-test-lp123",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			info := &PPAInfo{
 				FullName: tt.fullName,
 			}
 			target := info.GetPPATarget(tt.username)
-			
+
 			if target != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, target)
 			}
@@ -375,7 +375,7 @@ func TestPPAInfo_GetBranchName(t *testing.T) {
 		{"sru with release", PPATypeSRU, "2127080", "jammy", "sru-lp2127080-jammy"},
 		{"bug with release", PPATypeBug, "1234567", "noble", "bug-lp1234567-noble"},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			info := &PPAInfo{
@@ -384,7 +384,7 @@ func TestPPAInfo_GetBranchName(t *testing.T) {
 				Release: tt.release,
 			}
 			branch := info.GetBranchName()
-			
+
 			if branch != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, branch)
 			}
@@ -425,15 +425,15 @@ func TestPPAInfo_GetChangelogMessage(t *testing.T) {
 			expectsText: "Bug fix",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			msg := tt.info.GetChangelogMessage()
-			
+
 			if !contains(msg, tt.expectsText) {
 				t.Errorf("expected message to contain %q, got %q", tt.expectsText, msg)
 			}
-			
+
 			// All messages should reference the bug
 			bugRef := "LP: #" + tt.info.BugID
 			if !contains(msg, bugRef) {
@@ -482,12 +482,12 @@ func TestPPAInfo_GetVersionSuffix(t *testing.T) {
 			expected:       "~jammy4",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			info := &PPAInfo{Release: tt.release}
 			suffix := info.GetVersionSuffix(tt.currentVersion)
-			
+
 			if suffix != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, suffix)
 			}
@@ -505,9 +505,9 @@ func TestPPAInfo_String(t *testing.T) {
 		Description: "fix-crash",
 		FullName:    "noble-sudo-rs-sru-lp2127080-fix-crash",
 	}
-	
+
 	output := info.String()
-	
+
 	expectedParts := []string{
 		"noble",
 		"sudo-rs",
@@ -516,7 +516,7 @@ func TestPPAInfo_String(t *testing.T) {
 		"fix-crash",
 		"sru-lp2127080",
 	}
-	
+
 	for _, part := range expectedParts {
 		if !contains(output, part) {
 			t.Errorf("expected output to contain %q\nGot: %s", part, output)
@@ -529,7 +529,7 @@ func TestIsInPackagingDir(t *testing.T) {
 	// Save current directory
 	oldWd, _ := os.Getwd()
 	defer os.Chdir(oldWd)
-	
+
 	tests := []struct {
 		name     string
 		setup    func(string)
@@ -559,15 +559,15 @@ func TestIsInPackagingDir(t *testing.T) {
 			expected: false,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			tt.setup(tmpDir)
 			os.Chdir(tmpDir)
-			
+
 			result := IsInPackagingDir()
-			
+
 			if result != tt.expected {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
@@ -579,7 +579,7 @@ func TestIsInPackagingDir(t *testing.T) {
 func TestDetectUbuntuRelease(t *testing.T) {
 	oldWd, _ := os.Getwd()
 	defer os.Chdir(oldWd)
-	
+
 	tests := []struct {
 		name        string
 		changelog   string
@@ -611,25 +611,25 @@ func TestDetectUbuntuRelease(t *testing.T) {
 			expectError: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			os.Chdir(tmpDir)
-			
+
 			os.MkdirAll("debian", 0755)
 			os.WriteFile("debian/changelog", []byte(tt.changelog), 0644)
-			
+
 			release, err := DetectUbuntuRelease()
-			
+
 			if tt.expectError && err == nil {
 				t.Error("expected error, got nil")
 			}
-			
+
 			if !tt.expectError && err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
-			
+
 			if !tt.expectError && release != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, release)
 			}
@@ -641,14 +641,14 @@ func TestDetectUbuntuRelease(t *testing.T) {
 func TestCreatePPAName(t *testing.T) {
 	oldWd, _ := os.Getwd()
 	defer os.Chdir(oldWd)
-	
+
 	// Setup test environment with debian/changelog
 	tmpDir := t.TempDir()
 	os.Chdir(tmpDir)
 	os.MkdirAll("debian", 0755)
 	changelog := "sudo-rs (0.2.3-1) noble; urgency=medium\n\n  * Test\n"
 	os.WriteFile("debian/changelog", []byte(changelog), 0644)
-	
+
 	tests := []struct {
 		name        string
 		project     string
@@ -749,23 +749,22 @@ func TestCreatePPAName(t *testing.T) {
 			expectError: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ppaName, err := CreatePPAName(tt.project, tt.bugID, tt.ppaType, tt.description)
-			
+
 			if tt.expectError && err == nil {
 				t.Error("expected error, got nil")
 			}
-			
+
 			if !tt.expectError && err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
-			
+
 			if !tt.expectError && ppaName != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, ppaName)
 			}
 		})
 	}
 }
-
