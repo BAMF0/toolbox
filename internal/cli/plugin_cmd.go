@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/bamf0/toolbox/internal/plugin"
@@ -31,6 +32,12 @@ var pluginInfoCmd = &cobra.Command{
 	Short: "Show detailed information about a plugin",
 	Args:  cobra.ExactArgs(1),
 	RunE:  runPluginInfo,
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if len(args) != 0 {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+		return getPluginNameCompletions(toComplete), cobra.ShellCompDirectiveNoFileComp
+	},
 }
 
 var pluginContextsCmd = &cobra.Command{
@@ -53,6 +60,7 @@ func getPluginManager() *plugin.PluginManager {
 	// Register built-in plugins
 	pm.RegisterPlugin(plugin.NewDockerPlugin())
 	pm.RegisterPlugin(plugin.NewKubernetesPlugin())
+	pm.RegisterPlugin(plugin.NewUbuntuPlugin())
 
 	return pm
 }
@@ -141,4 +149,18 @@ func boolToStatus(enabled bool) string {
 		return "enabled"
 	}
 	return "disabled"
+}
+
+// getPluginNameCompletions returns plugin names for autocomplete
+func getPluginNameCompletions(toComplete string) []string {
+	pm := getPluginManager()
+	metadata := pm.GetMetadata()
+	
+	var suggestions []string
+	for name := range metadata {
+		if strings.HasPrefix(name, toComplete) {
+			suggestions = append(suggestions, name)
+		}
+	}
+	return suggestions
 }

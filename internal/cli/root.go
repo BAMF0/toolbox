@@ -42,11 +42,39 @@ Define simple commands like 'tb build' or 'tb test' that automatically expand
 to the correct commands for your current project type (Node.js, Go, Python, etc.).`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
+	// Disable Cobra's default help command to avoid duplication
+	CompletionOptions: cobra.CompletionOptions{
+		DisableDefaultCmd: false,
+	},
 }
 
 // Execute runs the root command and returns any error encountered.
 // This is the main entry point for the CLI application.
 func Execute() error {
+	// Pre-process args to handle --help on dynamic commands
+	args := os.Args[1:]
+	if len(args) >= 2 {
+		// Check if this looks like a dynamic command with --help
+		// (not a known subcommand like "plugin", "completion", "help")
+		potentialCmd := args[0]
+		knownCommands := map[string]bool{
+			"plugin":     true,
+			"completion": true,
+			"help":       true,
+		}
+		
+		if !knownCommands[potentialCmd] {
+			// This might be a dynamic command
+			for _, arg := range args[1:] {
+				if arg == "--help" || arg == "-h" {
+					// Redirect to: tb help <command>
+					os.Args = []string{os.Args[0], "help", potentialCmd}
+					break
+				}
+			}
+		}
+	}
+	
 	return rootCmd.Execute()
 }
 
@@ -56,6 +84,9 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "print command without executing")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().DurationVar(&commandTimeout, "timeout", DefaultCommandTimeout, "command execution timeout")
+
+	// Disable Cobra's auto-generated help command (we have our own)
+	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
 
 	// Allow unknown commands to be handled dynamically
 	rootCmd.Args = cobra.ArbitraryArgs
@@ -72,6 +103,13 @@ func handleDynamicCommand(cmd *cobra.Command, args []string) error {
 
 	commandName := args[0]
 	commandArgs := args[1:]
+
+	// Check if user wants help for this command (anywhere in args)
+	for _, arg := range commandArgs {
+		if arg == "--help" || arg == "-h" {
+			return showHelp(cmd, []string{commandName})
+		}
+	}
 
 	// Validate arguments early
 	if err := validateArguments(commandArgs); err != nil {

@@ -34,24 +34,28 @@ func setupCompletion() {
 }
 
 // getDynamicCommandCompletions returns command suggestions based on current context
+// If --context flag is provided, use that instead of detection
 func getDynamicCommandCompletions(toComplete string) []string {
 	var suggestions []string
 
-	// Try to detect context
+	// Check if --context flag is set
 	var detectedCtx string
-
-	// Try plugin-based detection first
-	pm := getPluginManager()
-	pluginCtx, _, foundByPlugin := pm.DetectContext(".")
-
-	if foundByPlugin {
-		detectedCtx = pluginCtx
+	if forceCtx != "" {
+		detectedCtx = forceCtx
 	} else {
-		// Fall back to built-in detection
-		detector := contextpkg.NewDetector()
-		ctx, err := detector.Detect(".")
-		if err == nil {
-			detectedCtx = ctx
+		// Try plugin-based detection first
+		pm := getPluginManager()
+		pluginCtx, _, foundByPlugin := pm.DetectContext(".")
+
+		if foundByPlugin {
+			detectedCtx = pluginCtx
+		} else {
+			// Fall back to built-in detection
+			detector := contextpkg.NewDetector()
+			ctx, err := detector.Detect(".")
+			if err == nil {
+				detectedCtx = ctx
+			}
 		}
 	}
 
@@ -60,6 +64,7 @@ func getDynamicCommandCompletions(toComplete string) []string {
 		cfg, err := config.Load("")
 		if err == nil {
 			// Merge plugin contexts
+			pm := getPluginManager()
 			pluginContexts := pm.GetContexts()
 			for ctxName, ctxConfig := range pluginContexts {
 				if _, exists := cfg.Contexts[ctxName]; !exists {
@@ -71,7 +76,12 @@ func getDynamicCommandCompletions(toComplete string) []string {
 			if ctxConfig, exists := cfg.Contexts[detectedCtx]; exists {
 				for cmdName := range ctxConfig.Commands {
 					if strings.HasPrefix(cmdName, toComplete) {
-						suggestions = append(suggestions, cmdName)
+						// Add command with description if available
+						description := ""
+						if desc, ok := ctxConfig.Descriptions[cmdName]; ok {
+							description = "\t" + desc
+						}
+						suggestions = append(suggestions, cmdName+description)
 					}
 				}
 			}

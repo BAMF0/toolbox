@@ -33,7 +33,8 @@ type Config struct {
 
 // ContextConfig defines commands for a specific context
 type ContextConfig struct {
-	Commands map[string]string `yaml:"commands"`
+	Commands     map[string]string `yaml:"commands"`
+	Descriptions map[string]string `yaml:"descriptions,omitempty"`
 }
 
 // Load reads and parses the configuration file with security validation.
@@ -280,6 +281,14 @@ func getDefaultConfig() *Config {
 					"lint":    "npm run lint",
 					"install": "npm install",
 				},
+				Descriptions: map[string]string{
+					"build":   "Build the project (npm run build)",
+					"test":    "Run tests (npm test)",
+					"start":   "Start the application (npm start)",
+					"dev":     "Start development server (npm run dev)",
+					"lint":    "Run linter (npm run lint)",
+					"install": "Install dependencies (npm install)",
+				},
 			},
 			"go": {
 				Commands: map[string]string{
@@ -290,6 +299,14 @@ func getDefaultConfig() *Config {
 					"lint":    "golangci-lint run",
 					"fmt":     "go fmt ./...",
 				},
+				Descriptions: map[string]string{
+					"build":   "Build all packages (go build ./...)",
+					"test":    "Run all tests (go test ./...)",
+					"run":     "Run main program (go run ./cmd/...)",
+					"install": "Download dependencies (go mod download)",
+					"lint":    "Run golangci-lint (golangci-lint run)",
+					"fmt":     "Format code (go fmt ./...)",
+				},
 			},
 			"python": {
 				Commands: map[string]string{
@@ -298,6 +315,13 @@ func getDefaultConfig() *Config {
 					"fmt":     "black .",
 					"install": "pip install -r requirements.txt",
 					"run":     "python main.py",
+				},
+				Descriptions: map[string]string{
+					"test":    "Run tests with pytest",
+					"lint":    "Check code with ruff",
+					"fmt":     "Format code with black",
+					"install": "Install dependencies from requirements.txt",
+					"run":     "Run main.py",
 				},
 			},
 			"rust": {
@@ -309,12 +333,25 @@ func getDefaultConfig() *Config {
 					"lint":    "cargo clippy",
 					"fmt":     "cargo fmt",
 				},
+				Descriptions: map[string]string{
+					"build":   "Build the project (cargo build)",
+					"test":    "Run tests (cargo test)",
+					"run":     "Run the binary (cargo run)",
+					"install": "Fetch dependencies (cargo fetch)",
+					"lint":    "Run clippy linter (cargo clippy)",
+					"fmt":     "Format code (cargo fmt)",
+				},
 			},
 			"make": {
 				Commands: map[string]string{
 					"build": "make",
 					"test":  "make test",
 					"clean": "make clean",
+				},
+				Descriptions: map[string]string{
+					"build": "Build using Makefile (make)",
+					"test":  "Run tests (make test)",
+					"clean": "Clean build artifacts (make clean)",
 				},
 			},
 		},

@@ -49,6 +49,8 @@ Command: go test ./...
 - **Extensible**: Add custom contexts without touching code
 - **Cross-platform**: Linux, macOS, and Windows
 - **Zero Config**: Works out-of-the-box for common projects
+- **Built-in Help**: Comprehensive help for all commands with `tb help <command>`
+- **Shell Autocompletion**: Tab completion with command descriptions for bash, zsh, fish
 
 ---
 
@@ -93,6 +95,30 @@ tb test -v            # Shows context detection
 
 # Force a specific context
 tb build --context python
+
+# Get help for any command
+tb help build              # Shows description and what it runs
+
+# Install shell autocompletion (bash example)
+tb completion bash | sudo tee /etc/bash_completion.d/tb
+source ~/.bashrc
+# Now use Tab to see commands with descriptions!
+```
+
+### Getting Help
+
+```bash
+# Show help for a command (uses current context)
+tb help build
+
+# Show help in a specific context
+tb help --context ubuntu-packaging gbranch
+
+# See available plugins
+tb plugin list
+
+# Get plugin details
+tb plugin info ubuntu
 ```
 
 ### Supported Contexts (Default)
@@ -189,46 +215,76 @@ toolbox/
 │   ├── cli/             # Cobra commands & handlers
 │   ├── config/          # YAML config loading
 │   ├── context/         # Project detection
+│   ├── plugin/          # Plugin system
 │   └── registry/        # Command lookup
 ├── examples/            # Example configs
-└── docs/               # Documentation
+└── scripts/             # Helper scripts
 ```
 
 ### Design Principles
 
 1. **Modular**: Clear separation of concerns
-2. **Simple**: MVP focuses on core functionality  
-3. **Extensible**: Easy to add contexts via config
+2. **Simple**: Focused on core functionality  
+3. **Extensible**: Easy to add contexts via config or plugins
 4. **Idiomatic**: Follows Go best practices
 
-See [STRUCTURE.md](STRUCTURE.md) for detailed architecture documentation.
+---
+
+## Plugin System
+
+ToolBox supports a flexible plugin system for extending functionality:
+
+```bash
+# List available plugins
+tb plugin list
+
+# Get plugin information
+tb plugin info ubuntu
+
+# List all contexts (including from plugins)
+tb plugin contexts
+```
+
+### Available Plugins
+
+- **Ubuntu Packaging**: Smart PPA-based Ubuntu packaging workflow
+  - Auto-detects Debian packaging directories
+  - Manages git branches based on bug IDs
+  - Automates changelog, builds, and uploads
+  - See `tb plugin info ubuntu` for details
 
 ---
 
 ## Future Enhancements
 
-This MVP provides a solid foundation. Planned features include:
+Planned features include:
 
-- **Plugin System**: Third-party context plugins
 - **Interactive Mode**: Command selection UI
 - **Templates**: Parameterized commands with variables
 - **History**: Track and reuse frequent commands
 - **Environments**: Different commands for dev/staging/prod
-- **Shell Completion**: Tab completion for commands
 - **Hooks**: Pre/post command execution
 - **CI/CD Integration**: Generate pipeline configs
-
-See [EXTENSIONS.md](EXTENSIONS.md) for detailed roadmap and extension points.
 
 ---
 
 ## Documentation
 
-- **[README.md](README.md)** - This file, project overview
-- **[BUILD.md](BUILD.md)** - Build, installation, and usage guide
-- **[STRUCTURE.md](STRUCTURE.md)** - Architecture and design details  
-- **[EXTENSIONS.md](EXTENSIONS.md)** - Future features and extension points
-- **[QUICKREF.md](QUICKREF.md)** - Command reference and examples
+The tool includes comprehensive inline help:
+
+```bash
+# Show general help
+tb --help
+
+# Show help for a specific command
+tb help build
+
+# Show help in a specific context
+tb help --context ubuntu-packaging gbranch
+
+# Generate shell completion
+tb completion bash > /etc/bash_completion.d/tb
+```
 
 ---
 
