@@ -270,7 +270,16 @@ Planned features include:
 
 ## Documentation
 
-The tool includes comprehensive inline help:
+Full documentation is available in the [docs/](docs/) directory:
+
+- **[User Guide](docs/user-guide.md)** - Complete guide to using ToolBox
+- **[Shell Autocompletion](docs/autocompletion.md)** - Setting up tab completion
+- **[Plugin Development](docs/plugin-development.md)** - Creating custom plugins
+- **[Configuration Guide](docs/configuration.md)** - Advanced configuration options
+- **[API Reference](docs/api-reference.md)** - Plugin API documentation
+- **[Command Reference](docs/command-reference.md)** - All available commands
+
+### Quick Help
 
 ```bash
 # Show general help
