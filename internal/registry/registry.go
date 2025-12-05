@@ -1,3 +1,5 @@
+// Package registry manages command lookups and provides a safe interface
+// for accessing context-specific command mappings.
 package registry
 
 import (
@@ -11,15 +13,21 @@ type Registry struct {
 	config *config.Config
 }
 
-// New creates a new command registry
+// New creates a new command registry.
+// If cfg is nil, operations will return appropriate errors rather than panicking.
 func New(cfg *config.Config) *Registry {
 	return &Registry{
 		config: cfg,
 	}
 }
 
-// GetCommand retrieves the full command for a given context and command name
+// GetCommand retrieves the full command for a given context and command name.
+// Returns an error if the config is nil, context doesn't exist, or command is not found.
 func (r *Registry) GetCommand(context, commandName string) (string, error) {
+	if r.config == nil || r.config.Contexts == nil {
+		return "", fmt.Errorf("registry not properly initialized")
+	}
+
 	// Check if context exists
 	ctxConfig, exists := r.config.Contexts[context]
 	if !exists {
@@ -35,8 +43,13 @@ func (r *Registry) GetCommand(context, commandName string) (string, error) {
 	return fullCommand, nil
 }
 
-// ListCommands returns all available commands for a context
+// ListCommands returns all available commands for a context.
+// Returns an error if the config is nil or context doesn't exist.
 func (r *Registry) ListCommands(context string) ([]string, error) {
+	if r.config == nil || r.config.Contexts == nil {
+		return nil, fmt.Errorf("registry not properly initialized")
+	}
+
 	ctxConfig, exists := r.config.Contexts[context]
 	if !exists {
 		return nil, fmt.Errorf("unknown context '%s'", context)
@@ -50,8 +63,13 @@ func (r *Registry) ListCommands(context string) ([]string, error) {
 	return commands, nil
 }
 
-// ListContexts returns all available contexts
+// ListContexts returns all available contexts.
+// Returns an empty slice if the config is nil.
 func (r *Registry) ListContexts() []string {
+	if r.config == nil || r.config.Contexts == nil {
+		return []string{}
+	}
+
 	contexts := make([]string, 0, len(r.config.Contexts))
 	for ctx := range r.config.Contexts {
 		contexts = append(contexts, ctx)

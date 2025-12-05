@@ -1,22 +1,36 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/bamf0/toolbox/internal/config"
-	"github.com/bamf0/toolbox/internal/context"
+	contextpkg "github.com/bamf0/toolbox/internal/context"
 	"github.com/bamf0/toolbox/internal/registry"
 	"github.com/spf13/cobra"
 )
 
+const (
+	// DefaultCommandTimeout is the maximum time a command can run
+	DefaultCommandTimeout = 10 * time.Minute
+	
+	// MaxArgumentLength limits individual argument size to prevent memory exhaustion
+	MaxArgumentLength = 8192
+	
+	// MaxArgumentCount limits total number of arguments
+	MaxArgumentCount = 100
+)
+
 var (
-	cfgFile     string
-	forceCtx    string
-	dryRun      bool
-	verbose     bool
+	cfgFile        string
+	forceCtx       string
+	dryRun         bool
+	verbose        bool
+	commandTimeout time.Duration
 )
 
 var rootCmd = &cobra.Command{
@@ -30,15 +44,18 @@ to the correct commands for your current project type (Node.js, Go, Python, etc.
 	SilenceErrors: true,
 }
 
+// Execute runs the root command and returns any error encountered.
+// This is the main entry point for the CLI application.
 func Execute() error {
 	return rootCmd.Execute()
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: .toolbox.yaml or ~/.toolbox/config.yaml)")
-	rootCmd.PersistentFlags().StringVar(&forceCtx, "context", "", "force a specific context (node, go, python, etc.)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "cfg", "", "config file (default: .toolbox.yaml or ~/.toolbox/config.yaml)")
+	rootCmd.PersistentFlags().StringVar(&forceCtx, "ctx", "", "force a specific context (node, go, python, etc.)")
 	rootCmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "print command without executing")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
+	rootCmd.PersistentFlags().DurationVar(&commandTimeout, "timeout", DefaultCommandTimeout, "command execution timeout")
 
 	// Dynamic command handler - intercepts unknown commands
 	rootCmd.RunE = handleDynamicCommand
@@ -52,6 +69,11 @@ func handleDynamicCommand(cmd *cobra.Command, args []string) error {
 
 	commandName := args[0]
 	commandArgs := args[1:]
+
+	// Validate arguments early
+	if err := validateArguments(commandArgs); err != nil {
+		return fmt.Errorf("invalid arguments: %w", err)
+	}
 
 	// Load configuration
 	cfg, err := config.Load(cfgFile)
@@ -67,7 +89,7 @@ func handleDynamicCommand(cmd *cobra.Command, args []string) error {
 			fmt.Printf("Using forced context: %s\n", detectedCtx)
 		}
 	} else {
-		detector := context.NewDetector()
+		detector := contextpkg.NewDetector()
 		detectedCtx, err = detector.Detect(".")
 		if err != nil {
 			return fmt.Errorf("failed to detect context: %w", err)
@@ -79,35 +101,118 @@ func handleDynamicCommand(cmd *cobra.Command, args []string) error {
 
 	// Get command from registry
 	reg := registry.New(cfg)
-	fullCommand, err := reg.GetCommand(detectedCtx, commandName)
+	baseCommand, err := reg.GetCommand(detectedCtx, commandName)
 	if err != nil {
 		return fmt.Errorf("command '%s' not found in context '%s': %w", commandName, detectedCtx, err)
 	}
 
-	// Append any additional arguments
-	if len(commandArgs) > 0 {
-		fullCommand = fullCommand + " " + strings.Join(commandArgs, " ")
-	}
-
 	if dryRun || verbose {
 		fmt.Printf("Context: %s\n", detectedCtx)
-		fmt.Printf("Command: %s\n", fullCommand)
+		fmt.Printf("Base command: %s\n", baseCommand)
+		if len(commandArgs) > 0 {
+			fmt.Printf("Additional arguments: %s\n", strings.Join(commandArgs, " "))
+		}
 		if dryRun {
 			return nil
 		}
 	}
 
-	// Execute the command
-	return executeCommand(fullCommand)
+	// Execute the command securely
+	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
+	defer cancel()
+
+	return executeCommandSecure(ctx, baseCommand, commandArgs)
 }
 
-// executeCommand runs the shell command
-func executeCommand(command string) error {
+// validateArguments performs security validation on user-supplied arguments
+func validateArguments(args []string) error {
+	if len(args) > MaxArgumentCount {
+		return fmt.Errorf("too many arguments (max: %d, got: %d)", MaxArgumentCount, len(args))
+	}
+
+	for i, arg := range args {
+		if len(arg) > MaxArgumentLength {
+			return fmt.Errorf("argument %d exceeds maximum length of %d bytes", i, MaxArgumentLength)
+		}
+		
+		// Warn about potentially dangerous characters (informational only in this version)
+		if containsDangerousPatterns(arg) && verbose {
+			fmt.Fprintf(os.Stderr, "Warning: argument %d contains shell metacharacters: %q\n", i, arg)
+		}
+	}
+
+	return nil
+}
+
+// containsDangerousPatterns checks for common shell injection characters
+// This is informational; actual protection comes from not using a shell
+func containsDangerousPatterns(s string) bool {
+	dangerous := []string{";", "|", "&", "$", "`", "(", ")", "<", ">", "\n", "\r"}
+	for _, pattern := range dangerous {
+		if strings.Contains(s, pattern) {
+			return true
+		}
+	}
+	return false
+}
+
+// executeCommandSecure runs the command WITHOUT shell interpretation
+// This is the primary defense against command injection
+func executeCommandSecure(ctx context.Context, baseCommand string, userArgs []string) error {
+	// Parse the base command into program and arguments
+	// We split on whitespace, which handles simple cases like "npm run build"
+	// For complex commands with pipes/redirects, those should be in shell scripts
+	parts := strings.Fields(baseCommand)
+	if len(parts) == 0 {
+		return fmt.Errorf("empty command")
+	}
+
+	program := parts[0]
+	baseArgs := parts[1:]
+
+	// Combine base arguments with user-supplied arguments
+	allArgs := append(baseArgs, userArgs...)
+
+	// Validate that the program exists and is executable
+	programPath, err := exec.LookPath(program)
+	if err != nil {
+		return fmt.Errorf("command not found: %s: %w", program, err)
+	}
+
+	if verbose {
+		fmt.Printf("Executing: %s %s\n", programPath, strings.Join(allArgs, " "))
+	}
+
+	// Create command with explicit arguments (NO SHELL)
+	cmd := exec.CommandContext(ctx, programPath, allArgs...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	cmd.Env = os.Environ() // Explicitly set environment
+
+	// Execute and handle errors with context
+	if err := cmd.Run(); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return fmt.Errorf("command timed out after %v", commandTimeout)
+		}
+		// Preserve original error for debugging
+		return fmt.Errorf("command failed: %w", err)
+	}
+
+	return nil
+}
+
+// executeCommandShellFallback is for commands that genuinely need shell features
+// This should ONLY be used for trusted commands from config files, NEVER user input
+// DEPRECATED: Use shell scripts in config instead
+func executeCommandShellFallback(ctx context.Context, command string) error {
 	// Determine shell based on OS
-	shell := "sh"
+	shell := "/bin/sh"
 	shellArg := "-c"
-	if _, err := exec.LookPath("bash"); err == nil {
-		shell = "bash"
+	
+	// Try to use bash if available (better error handling)
+	if bashPath, err := exec.LookPath("bash"); err == nil {
+		shell = bashPath
 	}
 
 	// On Windows, use cmd
@@ -116,10 +221,22 @@ func executeCommand(command string) error {
 		shellArg = "/C"
 	}
 
-	cmd := exec.Command(shell, shellArg, command)
+	if verbose {
+		fmt.Printf("Warning: Using shell execution: %s %s %q\n", shell, shellArg, command)
+	}
+
+	cmd := exec.CommandContext(ctx, shell, shellArg, command)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
+	cmd.Env = os.Environ()
 
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return fmt.Errorf("command timed out after %v", commandTimeout)
+		}
+		return fmt.Errorf("shell command failed: %w", err)
+	}
+
+	return nil
 }
