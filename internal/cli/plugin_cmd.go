@@ -49,11 +49,11 @@ func init() {
 // getPluginManager returns a configured plugin manager with built-in plugins
 func getPluginManager() *plugin.PluginManager {
 	pm := plugin.NewPluginManager("")
-	
+
 	// Register built-in plugins
 	pm.RegisterPlugin(plugin.NewDockerPlugin())
 	pm.RegisterPlugin(plugin.NewKubernetesPlugin())
-	
+
 	return pm
 }
 

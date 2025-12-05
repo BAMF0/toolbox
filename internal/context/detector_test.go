@@ -307,7 +307,7 @@ func BenchmarkDetector_Detect(b *testing.B) {
 	}
 
 	detector := NewDetector()
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, _ = detector.Detect(tmpDir)

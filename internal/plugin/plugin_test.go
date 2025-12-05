@@ -83,7 +83,7 @@ func TestPluginManager_MultiplePlugins(t *testing.T) {
 // TestPluginManager_GetContexts tests context merging from multiple plugins
 func TestPluginManager_GetContexts(t *testing.T) {
 	pm := NewPluginManager("/tmp/plugins")
-	
+
 	pm.RegisterPlugin(NewDockerPlugin())
 	pm.RegisterPlugin(NewKubernetesPlugin())
 
@@ -214,11 +214,11 @@ func TestKubernetesPlugin_Detect(t *testing.T) {
 			for _, file := range tt.setupFiles {
 				filePath := filepath.Join(tmpDir, file)
 				fileDir := filepath.Dir(filePath)
-				
+
 				if err := os.MkdirAll(fileDir, 0755); err != nil {
 					t.Fatalf("failed to create directory: %v", err)
 				}
-				
+
 				if err := os.WriteFile(filePath, []byte("test"), 0644); err != nil {
 					t.Fatalf("failed to create test file: %v", err)
 				}
@@ -265,7 +265,7 @@ func TestDockerPlugin_Contexts(t *testing.T) {
 // TestDockerPlugin_Validate tests plugin validation
 func TestDockerPlugin_Validate(t *testing.T) {
 	plugin := NewDockerPlugin()
-	
+
 	err := plugin.Validate()
 	if err != nil {
 		t.Errorf("Validate() unexpected error: %v", err)
@@ -275,7 +275,7 @@ func TestDockerPlugin_Validate(t *testing.T) {
 // TestKubernetesPlugin_Validate tests Kubernetes plugin validation
 func TestKubernetesPlugin_Validate(t *testing.T) {
 	plugin := NewKubernetesPlugin()
-	
+
 	err := plugin.Validate()
 	if err != nil {
 		t.Errorf("Validate() unexpected error: %v", err)

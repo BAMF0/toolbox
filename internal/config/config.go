@@ -232,11 +232,11 @@ func containsDangerousPatterns(s string) bool {
 	// Note: These are informational only for config files
 	// User-controlled config is assumed trusted
 	dangerous := []string{
-		";", // Command separator
-		"|", // Pipe
-		"&", // Background/AND
-		"$", // Variable expansion
-		"`", // Command substitution
+		";",  // Command separator
+		"|",  // Pipe
+		"&",  // Background/AND
+		"$",  // Variable expansion
+		"`",  // Command substitution
 		"\n", // Newline injection
 	}
 

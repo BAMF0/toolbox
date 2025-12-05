@@ -17,10 +17,10 @@ import (
 const (
 	// DefaultCommandTimeout is the maximum time a command can run
 	DefaultCommandTimeout = 10 * time.Minute
-	
+
 	// MaxArgumentLength limits individual argument size to prevent memory exhaustion
 	MaxArgumentLength = 8192
-	
+
 	// MaxArgumentCount limits total number of arguments
 	MaxArgumentCount = 100
 )
@@ -59,7 +59,7 @@ func init() {
 
 	// Allow unknown commands to be handled dynamically
 	rootCmd.Args = cobra.ArbitraryArgs
-	
+
 	// Dynamic command handler - intercepts unknown commands
 	rootCmd.RunE = handleDynamicCommand
 }
@@ -104,7 +104,7 @@ func handleDynamicCommand(cmd *cobra.Command, args []string) error {
 	} else {
 		// Try plugin-based detection first
 		pluginCtx, pluginName, foundByPlugin := pm.DetectContext(".")
-		
+
 		if foundByPlugin {
 			detectedCtx = pluginCtx
 			if verbose {
@@ -158,7 +158,7 @@ func validateArguments(args []string) error {
 		if len(arg) > MaxArgumentLength {
 			return fmt.Errorf("argument %d exceeds maximum length of %d bytes", i, MaxArgumentLength)
 		}
-		
+
 		// Warn about potentially dangerous characters (informational only in this version)
 		if containsDangerousPatterns(arg) && verbose {
 			fmt.Fprintf(os.Stderr, "Warning: argument %d contains shell metacharacters: %q\n", i, arg)
@@ -233,7 +233,7 @@ func executeCommandShellFallback(ctx context.Context, command string) error {
 	// Determine shell based on OS
 	shell := "/bin/sh"
 	shellArg := "-c"
-	
+
 	// Try to use bash if available (better error handling)
 	if bashPath, err := exec.LookPath("bash"); err == nil {
 		shell = bashPath

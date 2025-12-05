@@ -111,21 +111,21 @@ func TestLoadFromFile_SizeLimit(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create test file with specific size
 			testFile := filepath.Join(tmpDir, "test.yaml")
-			
+
 			// Create valid YAML content
 			validYAML := "contexts:\n  test:\n    commands:\n      build: echo test\n"
-			
+
 			// Pad to desired size
 			padding := strings.Repeat("# comment\n", int(tt.fileSize/10))
 			content := validYAML + padding
-			
+
 			// Truncate or extend to exact size
 			if int64(len(content)) < tt.fileSize {
 				content += strings.Repeat("x", int(tt.fileSize)-len(content))
 			} else {
 				content = content[:tt.fileSize]
 			}
-			
+
 			if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
 				t.Fatalf("failed to create test file: %v", err)
 			}
@@ -475,7 +475,7 @@ func TestLoad_DefaultConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 	oldWd, _ := os.Getwd()
 	defer os.Chdir(oldWd)
-	
+
 	if err := os.Chdir(tmpDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}

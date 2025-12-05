@@ -48,10 +48,10 @@ func (p *DockerPlugin) Contexts() map[string]config.ContextConfig {
 		},
 		"docker-compose": {
 			Commands: map[string]string{
-				"up":    "docker-compose up -d",
-				"down":  "docker-compose down",
-				"logs":  "docker-compose logs -f",
-				"build": "docker-compose build",
+				"up":      "docker-compose up -d",
+				"down":    "docker-compose down",
+				"logs":    "docker-compose logs -f",
+				"build":   "docker-compose build",
 				"restart": "docker-compose restart",
 			},
 		},
@@ -69,7 +69,7 @@ func (p *DockerPlugin) Detect(dir string) (string, bool) {
 	// Check for docker-compose.yml or docker-compose.yaml
 	composeYml := filepath.Join(dir, "docker-compose.yml")
 	composeYaml := filepath.Join(dir, "docker-compose.yaml")
-	
+
 	if fileExists(composeYml) || fileExists(composeYaml) {
 		return "docker-compose", true
 	}
@@ -82,7 +82,7 @@ func (p *DockerPlugin) Validate() error {
 	if p.name == "" {
 		return fmt.Errorf("plugin name cannot be empty")
 	}
-	
+
 	if p.version == "" {
 		return fmt.Errorf("plugin version cannot be empty")
 	}
@@ -92,7 +92,7 @@ func (p *DockerPlugin) Validate() error {
 		if len(ctxConfig.Commands) == 0 {
 			return fmt.Errorf("context %q has no commands", ctxName)
 		}
-		
+
 		for cmdName, cmd := range ctxConfig.Commands {
 			if cmd == "" {
 				return fmt.Errorf("context %q, command %q is empty", ctxName, cmdName)
@@ -129,12 +129,12 @@ func (p *KubernetesPlugin) Contexts() map[string]config.ContextConfig {
 	return map[string]config.ContextConfig{
 		"kubernetes": {
 			Commands: map[string]string{
-				"apply":   "kubectl apply -f .",
-				"delete":  "kubectl delete -f .",
-				"get":     "kubectl get all",
-				"logs":    "kubectl logs -f",
-				"describe": "kubectl describe",
-				"exec":    "kubectl exec -it",
+				"apply":        "kubectl apply -f .",
+				"delete":       "kubectl delete -f .",
+				"get":          "kubectl get all",
+				"logs":         "kubectl logs -f",
+				"describe":     "kubectl describe",
+				"exec":         "kubectl exec -it",
 				"port-forward": "kubectl port-forward",
 			},
 		},
@@ -177,7 +177,7 @@ func (p *KubernetesPlugin) Validate() error {
 	if p.name == "" {
 		return fmt.Errorf("plugin name cannot be empty")
 	}
-	
+
 	if p.version == "" {
 		return fmt.Errorf("plugin version cannot be empty")
 	}

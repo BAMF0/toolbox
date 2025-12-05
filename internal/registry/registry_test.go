@@ -221,7 +221,7 @@ func TestRegistry_NilConfig(t *testing.T) {
 	}()
 
 	reg := New(nil)
-	
+
 	// Should not panic, may return error or empty results
 	_ = reg.ListContexts()
 }
