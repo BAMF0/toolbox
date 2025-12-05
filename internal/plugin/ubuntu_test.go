@@ -111,7 +111,7 @@ func TestParsePPAName_Merge(t *testing.T) {
 	}{
 		{
 			name:        "valid merge PPA",
-			ppaName:     "noble-efibootmgr-merge-lp2133493",
+			ppaName:     "efibootmgr-merge-lp2133493-noble",
 			expectError: false,
 			expected: &PPAInfo{
 				Release:     "noble",
@@ -119,12 +119,12 @@ func TestParsePPAName_Merge(t *testing.T) {
 				Type:        PPATypeMerge,
 				BugID:       "2133493",
 				Description: "",
-				FullName:    "noble-efibootmgr-merge-lp2133493",
+				FullName:    "efibootmgr-merge-lp2133493-noble",
 			},
 		},
 		{
 			name:        "valid merge with hyphenated project",
-			ppaName:     "jammy-sudo-rs-merge-lp2127080",
+			ppaName:     "sudo-rs-merge-lp2127080-jammy",
 			expectError: false,
 			expected: &PPAInfo{
 				Release:     "jammy",
@@ -132,7 +132,7 @@ func TestParsePPAName_Merge(t *testing.T) {
 				Type:        PPATypeMerge,
 				BugID:       "2127080",
 				Description: "",
-				FullName:    "jammy-sudo-rs-merge-lp2127080",
+				FullName:    "sudo-rs-merge-lp2127080-jammy",
 			},
 		},
 	}
@@ -177,7 +177,7 @@ func TestParsePPAName_SRU(t *testing.T) {
 	}{
 		{
 			name:        "valid SRU with description",
-			ppaName:     "jammy-sudo-rs-sru-lp2127080-escape-equals-question",
+			ppaName:     "sudo-rs-sru-lp2127080-escape-equals-question-jammy",
 			expectError: false,
 			expected: &PPAInfo{
 				Release:     "jammy",
@@ -185,12 +185,12 @@ func TestParsePPAName_SRU(t *testing.T) {
 				Type:        PPATypeSRU,
 				BugID:       "2127080",
 				Description: "escape-equals-question",
-				FullName:    "jammy-sudo-rs-sru-lp2127080-escape-equals-question",
+				FullName:    "sudo-rs-sru-lp2127080-escape-equals-question-jammy",
 			},
 		},
 		{
 			name:        "valid SRU without description",
-			ppaName:     "noble-systemd-sru-lp1234567",
+			ppaName:     "systemd-sru-lp1234567-noble",
 			expectError: false,
 			expected: &PPAInfo{
 				Release:     "noble",
@@ -198,7 +198,7 @@ func TestParsePPAName_SRU(t *testing.T) {
 				Type:        PPATypeSRU,
 				BugID:       "1234567",
 				Description: "",
-				FullName:    "noble-systemd-sru-lp1234567",
+				FullName:    "systemd-sru-lp1234567-noble",
 			},
 		},
 	}
@@ -240,7 +240,7 @@ func TestParsePPAName_Bug(t *testing.T) {
 	}{
 		{
 			name:        "valid bug PPA with description",
-			ppaName:     "noble-sudo-rs-lp2127080-fix-crash",
+			ppaName:     "sudo-rs-lp2127080-fix-crash-noble",
 			expectError: false,
 			expected: &PPAInfo{
 				Release:     "noble",
@@ -248,12 +248,12 @@ func TestParsePPAName_Bug(t *testing.T) {
 				Type:        PPATypeBug,
 				BugID:       "2127080",
 				Description: "fix-crash",
-				FullName:    "noble-sudo-rs-lp2127080-fix-crash",
+				FullName:    "sudo-rs-lp2127080-fix-crash-noble",
 			},
 		},
 		{
 			name:        "valid bug PPA without description",
-			ppaName:     "jammy-vim-lp9876543",
+			ppaName:     "vim-lp9876543-jammy",
 			expectError: false,
 			expected: &PPAInfo{
 				Release:     "jammy",
@@ -261,7 +261,7 @@ func TestParsePPAName_Bug(t *testing.T) {
 				Type:        PPATypeBug,
 				BugID:       "9876543",
 				Description: "",
-				FullName:    "jammy-vim-lp9876543",
+				FullName:    "vim-lp9876543-jammy",
 			},
 		},
 	}
@@ -650,109 +650,140 @@ func TestCreatePPAName(t *testing.T) {
 	os.WriteFile("debian/changelog", []byte(changelog), 0644)
 
 	tests := []struct {
-		name        string
-		project     string
-		bugID       string
-		ppaType     string
-		description string
-		expected    string
-		expectError bool
+		name            string
+		project         string
+		bugID           string
+		ppaType         string
+		description     string
+		optionalRelease string
+		expected        string
+		expectError     bool
 	}{
 		{
-			name:        "merge PPA",
-			project:     "efibootmgr",
-			bugID:       "2133493",
-			ppaType:     "merge",
-			description: "",
-			expected:    "noble-efibootmgr-merge-lp2133493",
-			expectError: false,
+			name:            "merge PPA",
+			project:         "efibootmgr",
+			bugID:           "2133493",
+			ppaType:         "merge",
+			description:     "",
+			optionalRelease: "noble",
+			expected:        "efibootmgr-merge-lp2133493-noble",
+			expectError:     false,
 		},
 		{
-			name:        "SRU with description",
-			project:     "sudo-rs",
-			bugID:       "2127080",
-			ppaType:     "sru",
-			description: "escape equals question",
-			expected:    "noble-sudo-rs-sru-lp2127080-escape-equals-question",
-			expectError: false,
+			name:            "SRU with description",
+			project:         "sudo-rs",
+			bugID:           "2127080",
+			ppaType:         "sru",
+			description:     "escape equals question",
+			optionalRelease: "",
+			expected:        "sudo-rs-sru-lp2127080-escape-equals-question-noble",
+			expectError:     false,
 		},
 		{
-			name:        "bug PPA with description",
-			project:     "vim",
-			bugID:       "1234567",
-			ppaType:     "bug",
-			description: "fix crash",
-			expected:    "noble-vim-lp1234567-fix-crash",
-			expectError: false,
+			name:            "bug PPA with description",
+			project:         "vim",
+			bugID:           "1234567",
+			ppaType:         "bug",
+			description:     "fix crash",
+			optionalRelease: "",
+			expected:        "vim-lp1234567-fix-crash-noble",
+			expectError:     false,
 		},
 		{
-			name:        "bug PPA without description",
-			project:     "systemd",
-			bugID:       "lp9999999",
-			ppaType:     "bug",
-			description: "",
-			expected:    "noble-systemd-lp9999999",
-			expectError: false,
+			name:            "bug PPA without description",
+			project:         "systemd",
+			bugID:           "lp9999999",
+			ppaType:         "bug",
+			description:     "",
+			optionalRelease: "",
+			expected:        "systemd-lp9999999-noble",
+			expectError:     false,
 		},
 		{
-			name:        "short type aliases - merge",
-			project:     "test",
-			bugID:       "123",
-			ppaType:     "m",
-			description: "",
-			expected:    "noble-test-merge-lp123",
-			expectError: false,
+			name:            "short type aliases - merge",
+			project:         "test",
+			bugID:           "123",
+			ppaType:         "m",
+			description:     "",
+			optionalRelease: "noble",
+			expected:        "test-merge-lp123-noble",
+			expectError:     false,
 		},
 		{
-			name:        "short type aliases - sru",
-			project:     "test",
-			bugID:       "456",
-			ppaType:     "s",
-			description: "desc",
-			expected:    "noble-test-sru-lp456-desc",
-			expectError: false,
+			name:            "short type aliases - sru",
+			project:         "test",
+			bugID:           "456",
+			ppaType:         "s",
+			description:     "desc",
+			optionalRelease: "",
+			expected:        "test-sru-lp456-desc-noble",
+			expectError:     false,
 		},
 		{
-			name:        "missing project",
-			project:     "",
-			bugID:       "123",
-			ppaType:     "bug",
-			description: "",
-			expected:    "",
-			expectError: true,
+			name:            "merge without release",
+			project:         "test",
+			bugID:           "789",
+			ppaType:         "merge",
+			description:     "",
+			optionalRelease: "",
+			expected:        "",
+			expectError:     true,
 		},
 		{
-			name:        "missing bug ID",
-			project:     "test",
-			bugID:       "",
-			ppaType:     "bug",
-			description: "",
-			expected:    "",
-			expectError: true,
+			name:            "merge with description",
+			project:         "test",
+			bugID:           "789",
+			ppaType:         "merge",
+			description:     "should-fail",
+			optionalRelease: "noble",
+			expected:        "",
+			expectError:     true,
 		},
 		{
-			name:        "invalid bug ID",
-			project:     "test",
-			bugID:       "notanumber",
-			ppaType:     "bug",
-			description: "",
-			expected:    "",
-			expectError: true,
+			name:            "missing project",
+			project:         "",
+			bugID:           "123",
+			ppaType:         "bug",
+			description:     "",
+			optionalRelease: "",
+			expected:        "",
+			expectError:     true,
 		},
 		{
-			name:        "invalid type",
-			project:     "test",
-			bugID:       "123",
-			ppaType:     "invalid",
-			description: "",
-			expected:    "",
-			expectError: true,
+			name:            "missing bug ID",
+			project:         "test",
+			bugID:           "",
+			ppaType:         "bug",
+			description:     "",
+			optionalRelease: "",
+			expected:        "",
+			expectError:     true,
+		},
+		{
+			name:            "invalid bug ID",
+			project:         "test",
+			bugID:           "notanumber",
+			ppaType:         "bug",
+			description:     "",
+			optionalRelease: "",
+			expected:        "",
+			expectError:     true,
+		},
+		{
+			name:            "invalid type",
+			project:         "test",
+			bugID:           "123",
+			ppaType:         "invalid",
+			description:     "",
+			optionalRelease: "",
+			expected:        "",
+			expectError:     true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ppaName, err := CreatePPAName(tt.project, tt.bugID, tt.ppaType, tt.description)
+			ppaName, err := CreatePPAName(tt.project, tt.bugID, tt.ppaType, tt.description, tt.optionalRelease)
 
 			if tt.expectError && err == nil {
 				t.Error("expected error, got nil")

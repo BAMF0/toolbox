@@ -1,0 +1,114 @@
+.TH TB-HELP 1 "December 2025" "ToolBox 1.0" "User Commands"
+.SH NAME
+tb-help \- show help for a command
+.SH SYNOPSIS
+.B tb help
+[\fB\-\-context\fR \fICONTEXT\fR]
+.I COMMAND
+.SH DESCRIPTION
+The
+.B tb help
+command displays detailed help information for a specific command, including its description and the actual shell command it executes. The help shown is context-specific, meaning it shows information for the command in the current project context (or a specified context).
+.SH OPTIONS
+.TP
+.BR \-\-context " " \fICONTEXT\fR
+Show help for the command in a specific context instead of the detected context
+.SH EXAMPLES
+.TP
+.B tb help build
+Show help for the 'build' command in the current context
+.PP
+.in +4n
+.nf
+In a Node.js project (package.json detected):
+
+Command: build
+Context: node
+Description: Build the project
+Shell Command: npm run build
+.fi
+.in
+.TP
+.B tb help \-\-context go build
+Show help for the 'build' command in the Go context
+.PP
+.in +4n
+.nf
+Command: build
+Context: go
+Description: Build all packages
+Shell Command: go build ./...
+.fi
+.in
+.TP
+.B tb help \-\-context ubuntu-packaging gbranch
+Show help for the 'gbranch' command in the Ubuntu packaging context
+.PP
+.in +4n
+.nf
+Command: gbranch
+Context: ubuntu-packaging
+Description: Create/checkout git branch: gbranch <project> <bug-id> [merge|sru|bug] [description]
+Shell Command: bash ~/.cache/toolbox/ubuntu_helpers.sh gbranch
+.fi
+.in
+.SH CONTEXT DETECTION
+When run without \fB\-\-context\fR, help uses the same context detection as regular commands:
+.TP
+1.
+Scans current directory for marker files (package.json, go.mod, etc.)
+.TP
+2.
+Selects the first matching context
+.TP
+3.
+Shows help for the command in that context
+.PP
+Use \fB\-\-verbose\fR to see which context was detected:
+.PP
+.in +4n
+.nf
+tb help build -v
+.fi
+.in
+.SH AVAILABLE COMMANDS
+The available commands depend on the current context. Common commands across contexts include:
+.TP
+.B build
+Build the project
+.TP
+.B test
+Run tests
+.TP
+.B start
+Start the application
+.TP
+.B dev
+Start development server
+.TP
+.B lint
+Run linter
+.TP
+.B fmt
+Format code
+.TP
+.B install
+Install dependencies
+.TP
+.B run
+Run the application
+.PP
+Use
+.B tb plugin list
+and
+.B tb plugin info <plugin>
+to see plugin-specific commands.
+.SH SEE ALSO
+.BR tb (1),
+.BR tb-plugin (1)
+.PP
+Command Reference:
+.br
+https://github.com/bamf0/toolbox/blob/main/docs/command-reference.md
+.SH AUTHOR
+Written by the ToolBox contributors.

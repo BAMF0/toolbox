@@ -62,11 +62,25 @@ Command: go test ./...
 # Clone and build
 git clone https://github.com/bamf0/toolbox.git
 cd toolbox
+
+# Build with Go
 go build -o tb ./cmd/tb
 
-# Install to PATH
-sudo cp tb /usr/local/bin/
+# Or use Makefile
+make build
+
+# Install (choose one method):
+
+# Method 1: Using Makefile (recommended)
+sudo make install-all      # Install binary + man pages
 # or
+make install-man-user      # Install man pages for current user (no sudo)
+
+# Method 2: Manual install
+sudo cp tb /usr/local/bin/
+sudo make install-man      # Optional: install man pages
+
+# Method 3: Go install
 go install ./cmd/tb
 ```
 
@@ -278,6 +292,26 @@ Full documentation is available in the [docs/](docs/) directory:
 - **[Configuration Guide](docs/configuration.md)** - Advanced configuration options
 - **[API Reference](docs/api-reference.md)** - Plugin API documentation
 - **[Command Reference](docs/command-reference.md)** - All available commands
+
+### Man Pages
+
+Comprehensive manual pages are available:
+
+```bash
+# Install man pages
+make install-man-user   # User install (no sudo)
+# or
+sudo make install-man   # System-wide install
+
+# View man pages
+man tb                  # Main manual
+man tb-plugin           # Plugin management
+man tb-completion       # Shell completion
+man tb-help             # Help command
+man tb-config           # Configuration format
+```
+
+See [docs/man/README.md](docs/man/README.md) for details.
 
 ### Quick Help
 

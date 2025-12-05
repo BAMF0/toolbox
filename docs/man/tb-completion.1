@@ -1,0 +1,144 @@
+.TH TB-COMPLETION 1 "December 2025" "ToolBox 1.0" "User Commands"
+.SH NAME
+tb-completion \- generate shell completion script
+.SH SYNOPSIS
+.B tb completion
+.I SHELL
+.SH DESCRIPTION
+Generate shell completion scripts for ToolBox. Completion scripts enable tab-completion of commands and flags in your shell, making it faster and easier to use ToolBox.
+.PP
+The completion command supports:
+.TP
+.B bash
+Bourne Again SHell
+.TP
+.B zsh
+Z Shell
+.TP
+.B fish
+Friendly Interactive SHell
+.TP
+.B powershell
+PowerShell (Windows)
+.SH BASH
+To load completions in your current shell session:
+.PP
+.in +4n
+.nf
+source <(tb completion bash)
+.fi
+.in
+.PP
+To load completions for every new session, execute once:
+.PP
+.B Linux:
+.in +4n
+.nf
+tb completion bash | sudo tee /etc/bash_completion.d/tb
+.fi
+.in
+.PP
+.B macOS:
+.in +4n
+.nf
+tb completion bash > $(brew --prefix)/etc/bash_completion.d/tb
+.fi
+.in
+.PP
+After installing, restart your shell or source your .bashrc:
+.PP
+.in +4n
+.nf
+source ~/.bashrc
+.fi
+.in
+.SH ZSH
+To load completions in your current shell session:
+.PP
+.in +4n
+.nf
+source <(tb completion zsh)
+.fi
+.in
+.PP
+To load completions for every new session, add to your ~/.zshrc:
+.PP
+.in +4n
+.nf
+autoload -Uz compinit
+compinit
+tb completion zsh > "${fpath[1]}/_tb"
+.fi
+.in
+.PP
+After modifying ~/.zshrc, restart your shell or run:
+.PP
+.in +4n
+.nf
+source ~/.zshrc
+.fi
+.in
+.SH FISH
+To load completions in your current shell session:
+.PP
+.in +4n
+.nf
+tb completion fish | source
+.fi
+.in
+.PP
+To load completions for every new session:
+.PP
+.in +4n
+.nf
+tb completion fish > ~/.config/fish/completions/tb.fish
+.fi
+.in
+.SH POWERSHELL
+To load completions in your current shell session:
+.PP
+.in +4n
+.nf
+tb completion powershell | Out-String | Invoke-Expression
+.fi
+.in
+.PP
+To load completions for every new session, add the output to your PowerShell profile:
+.PP
+.in +4n
+.nf
+tb completion powershell >> $PROFILE
+.fi
+.in
+.SH EXAMPLES
+.TP
+.B tb completion bash > /tmp/tb-completion.bash
+Generate bash completion script and save to file
+.TP
+.B tb completion zsh | less
+View generated zsh completion script
+.TP
+.B sudo tb completion bash > /etc/bash_completion.d/tb
+Install bash completion system-wide (requires root)
+.SH FEATURES
+Shell completion provides:
+.TP
+\(bu
+Command name completion (build, test, start, etc.)
+.TP
+\(bu
+Flag completion (\-\-dry\-run, \-\-context, etc.)
+.TP
+\(bu
+Context name completion for \-\-context flag
+.TP
+\(bu
+Command descriptions displayed during completion
+.SH SEE ALSO
+.BR tb (1)
+.PP
+Autocompletion Guide:
+.br
+https://github.com/bamf0/toolbox/blob/main/docs/autocompletion.md
+.SH AUTHOR
+Written by the ToolBox contributors.

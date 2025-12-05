@@ -176,6 +176,21 @@ func (pm *PluginManager) GetContexts() map[string]config.ContextConfig {
 	return allContexts
 }
 
+// DetectAllContexts returns all contexts that match the current directory
+func (pm *PluginManager) DetectAllContexts(dir string) []string {
+	var contexts []string
+	seen := make(map[string]bool)
+
+	for _, plugin := range pm.plugins {
+		if ctx, detected := plugin.Detect(dir); detected && !seen[ctx] {
+			contexts = append(contexts, ctx)
+			seen[ctx] = true
+		}
+	}
+
+	return contexts
+}
+
 // AddTrustedHash adds a plugin hash to the allowlist
 func (pm *PluginManager) AddTrustedHash(hash string) {
 	pm.allowedHashes[hash] = true

@@ -1,0 +1,97 @@
+.TH TB-PLUGIN 1 "December 2025" "ToolBox 1.0" "User Commands"
+.SH NAME
+tb-plugin \- manage ToolBox plugins
+.SH SYNOPSIS
+.B tb plugin
+.I SUBCOMMAND
+[\fIOPTIONS\fR]
+.SH DESCRIPTION
+The
+.B tb plugin
+command manages ToolBox plugins. Plugins extend ToolBox functionality by adding new contexts and commands for specific workflows or technologies.
+.SH SUBCOMMANDS
+.TP
+.B list
+List all available plugins with their version, number of contexts, and enabled/disabled status
+.TP
+.B info
+.I PLUGIN
+Show detailed information about a specific plugin, including description, version, and available commands
+.TP
+.B contexts
+List all available contexts from all plugins with their detection markers
+.SH EXAMPLES
+.TP
+.B tb plugin list
+Display all available plugins:
+.PP
+.in +4n
+.nf
+NAME         VERSION   CONTEXTS   STATUS
+────         ───────   ────────   ──────
+kubernetes   1.0.0     2          enabled
+ubuntu       1.0.0     1          enabled
+docker       1.0.0     2          enabled
+.fi
+.in
+.TP
+.B tb plugin info ubuntu
+Show detailed information about the Ubuntu plugin:
+.PP
+.in +4n
+.nf
+Plugin: ubuntu
+Version: 1.0.0
+Contexts: 1
+
+Context: ubuntu-packaging
+  Description: Ubuntu/Debian packaging workflow
+  
+  Commands:
+    gbranch          Create/checkout git branch
+    ppa-status       Show PPA information
+    dch-auto         Auto-update changelog
+    ubuild           Complete build and upload workflow
+    [... more commands ...]
+.fi
+.in
+.TP
+.B tb plugin contexts
+List all available contexts from all plugins
+.SH BUILT-IN PLUGINS
+.SS Docker Plugin
+Provides context for Docker and Docker Compose projects:
+.TP
+.B docker
+For Dockerfile-based projects
+.TP
+.B docker-compose
+For docker-compose.yml projects
+.SS Kubernetes Plugin
+Provides contexts for Kubernetes projects:
+.TP
+.B kubernetes
+For projects with Kubernetes YAML manifests
+.TP
+.B helm
+For Helm chart projects
+.SS Ubuntu Plugin
+Provides Ubuntu/Debian packaging workflow:
+.TP
+.B ubuntu-packaging
+For projects with debian/ directory (debian/control, debian/changelog)
+.br
+Includes PPA-aware commands for managing Ubuntu package workflows
+.SH PLUGIN DEVELOPMENT
+Plugins are Go packages that implement the Plugin interface. See the Plugin Development Guide for creating custom plugins:
+.PP
+https://github.com/bamf0/toolbox/blob/main/docs/plugin-development.md
+.SH SEE ALSO
+.BR tb (1),
+.BR tb-help (1)
+.PP
+Plugin Development Guide:
+.br
+https://github.com/bamf0/toolbox/blob/main/docs/plugin-development.md
+.SH AUTHOR
+Written by the ToolBox contributors.

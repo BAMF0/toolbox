@@ -89,6 +89,11 @@ func (d *Detector) AddMarker(context, markerFile string) {
 	d.markers[context] = append(d.markers[context], markerFile)
 }
 
+// FileExists checks if a file exists in the current directory
+func (d *Detector) FileExists(filename string) bool {
+	return fileExists(filename)
+}
+
 // fileExists checks if a file exists
 func fileExists(path string) bool {
 	info, err := os.Stat(path)

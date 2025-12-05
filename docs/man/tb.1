@@ -1,0 +1,241 @@
+.TH TB 1 "December 2025" "ToolBox 0.1.0" "User Commands"
+.SH NAME
+tb \- context-aware command aliasing for developers
+.SH SYNOPSIS
+.B tb
+[\fIOPTIONS\fR]
+.I COMMAND
+[\fIARGS\fR...]
+.br
+.B tb
+\fB\-\-help\fR
+.br
+.B tb
+\fB\-\-version\fR
+.SH DESCRIPTION
+.B ToolBox (tb)
+is a context-aware CLI tool that provides intelligent command shortcuts based on your project type. Instead of remembering different commands for different projects (npm run build, go build, cargo build, etc.), you can use a consistent interface like
+.B tb build
+and ToolBox automatically runs the correct command for your current project.
+.PP
+ToolBox detects your project type by scanning for marker files (package.json, go.mod, Cargo.toml, etc.) and maps generic commands to project-specific commands. It's extensible through YAML configuration and a plugin system.
+.PP
+.B Important:
+ToolBox flags must come before the command name. Any flags after the command name are passed to the underlying command.
+.SH OPTIONS
+.TP
+.BR \-\-config " " \fIFILE\fR
+Specify config file (default: .toolbox.yaml or ~/.toolbox/config.yaml)
+.TP
+.BR \-\-context " " \fICONTEXT\fR
+Force a specific context (node, go, python, rust, etc.)
+.TP
+.BR \-\-dry\-run
+Print command without executing it
+.TP
+.BR \-h ", " \-\-help
+Display help information
+.TP
+.BR \-\-timeout " " \fIDURATION\fR
+Command execution timeout (default: 10m0s)
+.TP
+.BR \-\-verbose
+Enable verbose output showing context detection (note: -v is not supported to avoid conflicts with command arguments)
+.SH COMMANDS
+.TP
+.B completion
+Generate shell completion script for bash, zsh, fish, or powershell
+.TP
+.B help
+Show help for a specific command in the current or specified context
+.TP
+.B plugin
+Manage ToolBox plugins (list, info, contexts)
+.TP
+.B status
+Show current context, available commands, and other detected contexts
+.PP
+Additionally, context-specific commands are available based on the detected project type. Common commands include:
+.TP
+.B build
+Build the project
+.TP
+.B test
+Run tests
+.TP
+.B start
+Start the application
+.TP
+.B dev
+Start development server
+.TP
+.B lint
+Run linter
+.TP
+.B fmt
+Format code
+.TP
+.B install
+Install dependencies
+.TP
+.B run
+Run the application
+.PP
+See
+.B CONTEXTS
+below for context-specific commands.
+.SH CONTEXTS
+ToolBox supports multiple project contexts out of the box:
+.SS Node.js (node)
+Detected by:
+.B package.json
+.br
+Commands: build, test, start, dev, lint, install
+.SS Go (go)
+Detected by:
+.B go.mod
+.br
+Commands: build, test, run, install, lint, fmt
+.SS Python (python)
+Detected by:
+.B pyproject.toml
+or
+.B requirements.txt
+.br
+Commands: test, lint, fmt, install, run
+.SS Rust (rust)
+Detected by:
+.B Cargo.toml
+.br
+Commands: build, test, run, lint, fmt, install
+.SS Make (make)
+Detected by:
+.B Makefile
+.br
+Commands: build, test, clean
+.SS Docker (docker)
+Detected by:
+.B Dockerfile
+or
+.B docker-compose.yml
+.br
+Commands: build, up, down, logs, ps, shell
+.SS Kubernetes (kubernetes)
+Detected by:
+.B *.yaml
+or
+.B *.yml
+files with Kubernetes resources
+.br
+Commands: apply, delete, get-pods, get-all, logs, describe, exec
+.SS Ubuntu Packaging (ubuntu-packaging)
+Detected by:
+.B debian/control
+or
+.B debian/changelog
+.br
+Commands: gbranch, ppa-status, dch-auto, ubuild, sb-auto, dput-auto, and more
+.SH CONFIGURATION
+ToolBox uses YAML configuration files to define contexts and commands. Configuration is loaded in the following priority order:
+.PP
+1. File specified with \fB\-\-config\fR flag
+.br
+2. \fB.toolbox.yaml\fR in current directory
+.br
+3. \fB~/.toolbox/config.yaml\fR in home directory
+.br
+4. Built-in defaults
+.PP
+Example configuration:
+.PP
+.in +4n
+.nf
+contexts:
+  node:
+    commands:
+      build: "npm run build:prod"
+      test: "npm test -- --coverage"
+      deploy: "npm run deploy"
+  
+  custom:
+    commands:
+      up: "docker-compose up -d"
+      down: "docker-compose down"
+.fi
+.in
+.PP
+See
+.BR tb-config (5)
+for detailed configuration documentation.
+.SH EXAMPLES
+.TP
+.B tb build
+Build the current project using the appropriate build command for the detected context
+.TP
+.B tb --dry-run test
+Show what test command would be executed without running it (note: tb flags before command)
+.TP
+.B tb test -v -race
+Run tests with -v and -race flags passed to the underlying test command
+.TP
+.B tb --context python build
+Force the use of Python context commands regardless of detected project type
+.TP
+.B tb help build
+Show help for the 'build' command in the current context
+.TP
+.B tb status
+Show current context and all available commands in that context
+.TP
+.B tb plugin list
+List all available plugins and their status
+.TP
+.B tb \-\-version
+Show version information
+.TP
+.B tb completion bash > /etc/bash_completion.d/tb
+Generate and install bash completion script
+.SH FILES
+.TP
+.I .toolbox.yaml
+Project-specific configuration file
+.TP
+.I ~/.toolbox/config.yaml
+User-specific global configuration
+.TP
+.I ~/.cache/toolbox/
+Cache directory for temporary files (e.g., extracted scripts)
+.SH EXIT STATUS
+.TP
+.B 0
+Success
+.TP
+.B 1
+General error (command not found, execution failed, etc.)
+.TP
+.B 2
+Configuration error
+.SH ENVIRONMENT
+.TP
+.B HOME
+Used to locate the user's configuration directory (~/.toolbox/)
+.TP
+.B PATH
+Used to locate external commands executed by ToolBox
+.SH SEE ALSO
+.BR tb-plugin (1),
+.BR tb-completion (1),
+.BR tb-help (1),
+.BR tb-config (5)
+.PP
+Full documentation available at:
+.br
+https://github.com/bamf0/toolbox
+.SH BUGS
+Report bugs at: https://github.com/bamf0/toolbox/issues
+.SH AUTHOR
+Written by the ToolBox contributors.
+.SH COPYRIGHT
+Copyright \(co 2025 ToolBox contributors.
+.br
+License: MIT License

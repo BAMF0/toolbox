@@ -1,9 +1,6 @@
 #!/bin/bash
 # Ubuntu packaging helper scripts for ToolBox
 # These implement the dynamic PPA-aware commands
-#
-# NOTE: This is a copy of ../../scripts/ubuntu_helpers.sh that is embedded into the binary.
-# See .ubuntu_helpers_note.md for details on keeping it in sync.
 
 set -e
 
@@ -76,7 +73,7 @@ detect_project() {
 
 # Parse branch name into PPA components
 # Branch formats:
-#   - Merge: merge-lp<bug>
+# - Merge: merge-lp<bug>-<release> (release required, no description)
 #   - SRU: sru-lp<bug>-<release>
 #   - Bug: bug-lp<bug>-<release> or lp<bug>-<release>
 parse_branch() {
@@ -96,30 +93,44 @@ parse_branch() {
         PPA_FULL_NAME="$stored_ppa_name"
         
         # Extract components from stored PPA name
-        # Formats: 
-        #   Merge: <release>-<project>-merge-lp<bug>
-        #   SRU:   <release>-<project>-sru-lp<bug>[-<desc>]
-        #   Bug:   <release>-<project>-lp<bug>[-<desc>]
+        # New formats: 
+        #   Merge: <project>-merge-lp<bug>-<release>
+        #   SRU:   <project>-sru-lp<bug>-<release> or <project>-sru-lp<bug>-<desc>-<release>
+        #   Bug:   <project>-lp<bug>-<release> or <project>-lp<bug>-<desc>-<release>
         
-        if [[ "$stored_ppa_name" =~ ^([a-z]+)-(.+)-merge-lp([0-9]+)$ ]]; then
-            PPA_RELEASE="${BASH_REMATCH[1]}"
-            PPA_PROJECT="${BASH_REMATCH[2]}"
-            PPA_BUGID="${BASH_REMATCH[3]}"
+        if [[ "$stored_ppa_name" =~ ^([a-z0-9\-]+)-merge-lp([0-9]+)-([a-z]+)$ ]]; then
+            PPA_PROJECT="${BASH_REMATCH[1]}"
+            PPA_BUGID="${BASH_REMATCH[2]}"
+            PPA_RELEASE="${BASH_REMATCH[3]}"
             PPA_TYPE="merge"
             PPA_DESC=""
             return 0
-        elif [[ "$stored_ppa_name" =~ ^([a-z]+)-(.+)-sru-lp([0-9]+)(-(.+))?$ ]]; then
-            PPA_RELEASE="${BASH_REMATCH[1]}"
-            PPA_PROJECT="${BASH_REMATCH[2]}"
-            PPA_BUGID="${BASH_REMATCH[3]}"
-            PPA_DESC="${BASH_REMATCH[5]}"
+        elif [[ "$stored_ppa_name" =~ ^([a-z0-9\-]+)-sru-lp([0-9]+)-(.+)-([a-z]+)$ ]]; then
+            PPA_PROJECT="${BASH_REMATCH[1]}"
+            PPA_BUGID="${BASH_REMATCH[2]}"
+            PPA_DESC="${BASH_REMATCH[3]}"
+            PPA_RELEASE="${BASH_REMATCH[4]}"
             PPA_TYPE="sru"
             return 0
-        elif [[ "$stored_ppa_name" =~ ^([a-z]+)-(.+)-lp([0-9]+)(-(.+))?$ ]]; then
-            PPA_RELEASE="${BASH_REMATCH[1]}"
-            PPA_PROJECT="${BASH_REMATCH[2]}"
-            PPA_BUGID="${BASH_REMATCH[3]}"
-            PPA_DESC="${BASH_REMATCH[5]}"
+        elif [[ "$stored_ppa_name" =~ ^([a-z0-9\-]+)-sru-lp([0-9]+)-([a-z]+)$ ]]; then
+            PPA_PROJECT="${BASH_REMATCH[1]}"
+            PPA_BUGID="${BASH_REMATCH[2]}"
+            PPA_RELEASE="${BASH_REMATCH[3]}"
+            PPA_DESC=""
+            PPA_TYPE="sru"
+            return 0
+        elif [[ "$stored_ppa_name" =~ ^([a-z0-9\-]+)-lp([0-9]+)-(.+)-([a-z]+)$ ]]; then
+            PPA_PROJECT="${BASH_REMATCH[1]}"
+            PPA_BUGID="${BASH_REMATCH[2]}"
+            PPA_DESC="${BASH_REMATCH[3]}"
+            PPA_RELEASE="${BASH_REMATCH[4]}"
+            PPA_TYPE="bug"
+            return 0
+        elif [[ "$stored_ppa_name" =~ ^([a-z0-9\-]+)-lp([0-9]+)-([a-z]+)$ ]]; then
+            PPA_PROJECT="${BASH_REMATCH[1]}"
+            PPA_BUGID="${BASH_REMATCH[2]}"
+            PPA_RELEASE="${BASH_REMATCH[3]}"
+            PPA_DESC=""
             PPA_TYPE="bug"
             return 0
         fi
@@ -147,7 +158,7 @@ parse_branch() {
         PPA_PROJECT="$project"
         PPA_TYPE="sru"
         PPA_DESC=""
-        PPA_FULL_NAME="${PPA_RELEASE}-${project}-sru-lp${PPA_BUGID}"
+        PPA_FULL_NAME="${project}-sru-lp${PPA_BUGID}-${PPA_RELEASE}"
         return 0
     fi
     
@@ -158,7 +169,7 @@ parse_branch() {
         PPA_PROJECT="$project"
         PPA_TYPE="bug"
         PPA_DESC=""
-        PPA_FULL_NAME="${PPA_RELEASE}-${project}-lp${PPA_BUGID}"
+        PPA_FULL_NAME="${project}-lp${PPA_BUGID}-${PPA_RELEASE}"
         return 0
     fi
     
@@ -273,17 +284,19 @@ cmd_gbranch() {
     local bug_id="$2"
     local ppa_type="${3:-bug}"  # Default to bug
     local description="$4"
+    local target_release="$5"  # Optional release for merge, overrides detected
     
     if [[ -z "$project" ]]; then
-        error "Usage: gbranch <project> <bug-id> [type] [description]
+        error "Usage: gbranch <project> <bug-id> [type] [description] [release]
   project:     Project name (e.g., sudo-rs, efibootmgr)
   bug-id:      Launchpad bug ID (e.g., 2127080 or lp2127080)
   type:        PPA type: merge|m, sru|s, bug|b (default: bug)
-  description: Optional description for the PPA
+  description: Optional description (NOT allowed for merge)
+  release:     Target release (REQUIRED for merge, optional for sru/bug)
 
 Examples:
+  gbranch efibootmgr 2133493 merge \"\" plucky
   gbranch sudo-rs 2127080 sru escape-equals
-  gbranch efibootmgr 2133493 merge
   gbranch myproject 123456 bug test-fix"
     fi
     
@@ -300,39 +313,60 @@ Examples:
     fi
     
     # Detect current release from debian/changelog
-    local release=$(detect_release)
+    local detected_release=$(detect_release)
     
     # Normalize inputs
     project=$(echo "$project" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
     ppa_type=$(echo "$ppa_type" | tr '[:upper:]' '[:lower:]')
     description=$(echo "$description" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+    target_release=$(echo "$target_release" | tr '[:upper:]' '[:lower:]')
     
-    # Determine branch name based on type
+    # Determine which release to use
+    local release=""
+    if [[ -n "$target_release" ]]; then
+        release="$target_release"
+    else
+        release="$detected_release"
+    fi
+    
+    # Determine branch name and PPA name based on type
     local branch_name=""
     local ppa_name=""
     
     case "$ppa_type" in
         merge|m)
-            # Branch: merge-lp<bug>
-            branch_name="merge-lp${bug_id}"
-            ppa_name="${release}-${project}-merge-lp${bug_id}"
+            # Validate merge requirements
+            if [[ -z "$target_release" ]]; then
+                error "Merge branches require a target release parameter
+Usage: gbranch <project> <bug-id> merge \"\" <release>
+Example: gbranch efibootmgr 2133493 merge \"\" plucky"
+            fi
+            if [[ -n "$description" ]]; then
+                error "Merge branches cannot have a description"
+            fi
+            # Branch: merge-lp<bug>-<release>
+            branch_name="merge-lp${bug_id}-${release}"
+            # PPA: <project>-merge-lp<bug>-<release>
+            ppa_name="${project}-merge-lp${bug_id}-${release}"
             ;;
         sru|s)
             # Branch: sru-lp<bug>-<release>
             branch_name="sru-lp${bug_id}-${release}"
+            # PPA: <project>-sru-lp<bug>[-<desc>]-<release>
             if [[ -n "$description" ]]; then
-                ppa_name="${release}-${project}-sru-lp${bug_id}-${description}"
+                ppa_name="${project}-sru-lp${bug_id}-${description}-${release}"
             else
-                ppa_name="${release}-${project}-sru-lp${bug_id}"
+                ppa_name="${project}-sru-lp${bug_id}-${release}"
             fi
             ;;
         bug|b|"")
-            # Branch: bug-lp<bug>-<release>
-            branch_name="bug-lp${bug_id}-${release}"
+            # Branch: lp<bug>-<release>
+            branch_name="lp${bug_id}-${release}"
+            # PPA: <project>-lp<bug>[-<desc>]-<release>
             if [[ -n "$description" ]]; then
-                ppa_name="${release}-${project}-lp${bug_id}-${description}"
+                ppa_name="${project}-lp${bug_id}-${description}-${release}"
             else
-                ppa_name="${release}-${project}-lp${bug_id}"
+                ppa_name="${project}-lp${bug_id}-${release}"
             fi
             ;;
         *)
@@ -508,11 +542,15 @@ main() {
         ubuild)
             cmd_ubuild "$@"
             ;;
+        ppa-migrate)
+            migrate_all_ppa_names "$@"
+            ;;
         *)
             error "Unknown command: $cmd
 Available commands:
   gbranch <project> <bug-id> [type] [description]  - Create/checkout branch
   ppa-status                                        - Show PPA info from branch
+  ppa-migrate                                       - Migrate old PPA names to new format
   dch-auto                                          - Update changelog from branch
   sb-auto                                           - Build with sbuild from branch
   dput-auto                                         - Upload to PPA from branch
@@ -525,3 +563,63 @@ Available commands:
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     main "$@"
 fi
+
+# Migrate old PPA name format to new format
+# Old: <release>-<project>-<type>-lp<bug>[-<desc>]
+# New: <project>-<type>-lp<bug>[-<desc>]-<release>
+migrate_ppa_name() {
+    local old_ppa="$1"
+    
+    # Merge: plucky-os-prober-merge-lp123456 -> os-prober-merge-lp123456-plucky
+    if [[ "$old_ppa" =~ ^([a-z]+)-(.+)-merge-lp([0-9]+)$ ]]; then
+        echo "${BASH_REMATCH[2]}-merge-lp${BASH_REMATCH[3]}-${BASH_REMATCH[1]}"
+        return 0
+    fi
+    
+    # SRU with desc: plucky-os-prober-sru-lp123456-desc -> os-prober-sru-lp123456-desc-plucky
+    if [[ "$old_ppa" =~ ^([a-z]+)-(.+)-sru-lp([0-9]+)-(.+)$ ]]; then
+        echo "${BASH_REMATCH[2]}-sru-lp${BASH_REMATCH[3]}-${BASH_REMATCH[4]}-${BASH_REMATCH[1]}"
+        return 0
+    fi
+    
+    # SRU without desc: plucky-os-prober-sru-lp123456 -> os-prober-sru-lp123456-plucky
+    if [[ "$old_ppa" =~ ^([a-z]+)-(.+)-sru-lp([0-9]+)$ ]]; then
+        echo "${BASH_REMATCH[2]}-sru-lp${BASH_REMATCH[3]}-${BASH_REMATCH[1]}"
+        return 0
+    fi
+    
+    # Bug with desc: plucky-os-prober-lp123456-desc -> os-prober-lp123456-desc-plucky
+    if [[ "$old_ppa" =~ ^([a-z]+)-(.+)-lp([0-9]+)-(.+)$ ]]; then
+        echo "${BASH_REMATCH[2]}-lp${BASH_REMATCH[3]}-${BASH_REMATCH[4]}-${BASH_REMATCH[1]}"
+        return 0
+    fi
+    
+    # Bug without desc: plucky-os-prober-lp123456 -> os-prober-lp123456-plucky
+    if [[ "$old_ppa" =~ ^([a-z]+)-(.+)-lp([0-9]+)$ ]]; then
+        echo "${BASH_REMATCH[2]}-lp${BASH_REMATCH[3]}-${BASH_REMATCH[1]}"
+        return 0
+    fi
+    
+    # Already in new format or unrecognized
+    echo "$old_ppa"
+}
+
+# Migrate all stored PPA names in current repository
+migrate_all_ppa_names() {
+    echo "Migrating PPA names to new format..."
+    
+    for branch in $(git branch --format='%(refname:short)'); do
+        local stored_ppa=$(git config "branch.${branch}.ppaname" 2>/dev/null || echo "")
+        if [[ -n "$stored_ppa" ]]; then
+            local new_ppa=$(migrate_ppa_name "$stored_ppa")
+            if [[ "$stored_ppa" != "$new_ppa" ]]; then
+                echo "  $branch: $stored_ppa -> $new_ppa"
+                git config "branch.${branch}.ppaname" "$new_ppa"
+            else
+                echo "  $branch: $stored_ppa (already new format or unrecognized)"
+            fi
+        fi
+    done
+    
+    echo "Migration complete!"
+}

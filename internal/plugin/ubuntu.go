@@ -86,11 +86,12 @@ func (p *UbuntuPlugin) Contexts() map[string]config.ContextConfig {
 				"gbranch": fmt.Sprintf("bash %s gbranch", scriptPath),
 
 				// PPA-aware commands (infer from current branch)
-				"ppa-status": fmt.Sprintf("bash %s ppa-status", scriptPath),
-				"dch-auto":   fmt.Sprintf("bash %s dch-auto", scriptPath),
-				"ubuild":     fmt.Sprintf("bash %s ubuild", scriptPath),
-				"sb-auto":    fmt.Sprintf("bash %s sb-auto", scriptPath),
-				"dput-auto":  fmt.Sprintf("bash %s dput-auto", scriptPath),
+				"ppa-status":  fmt.Sprintf("bash %s ppa-status", scriptPath),
+				"ppa-migrate": fmt.Sprintf("bash %s ppa-migrate", scriptPath),
+				"dch-auto":    fmt.Sprintf("bash %s dch-auto", scriptPath),
+				"ubuild":      fmt.Sprintf("bash %s ubuild", scriptPath),
+				"sb-auto":     fmt.Sprintf("bash %s sb-auto", scriptPath),
+				"dput-auto":   fmt.Sprintf("bash %s dput-auto", scriptPath),
 
 				// Standard changelog commands
 				"dch":         "dch -i",
@@ -115,8 +116,9 @@ func (p *UbuntuPlugin) Contexts() map[string]config.ContextConfig {
 			},
 			Descriptions: map[string]string{
 				// Branch and PPA management
-				"gbranch":    "Create/checkout git branch: gbranch <project> <bug-id> [merge|sru|bug] [description]",
-				"ppa-status": "Show PPA information from current branch",
+				"gbranch":     "Create/checkout git branch: gbranch <project> <bug-id> [merge|sru|bug] [description] [release]",
+				"ppa-status":  "Show PPA information from current branch",
+				"ppa-migrate": "Migrate stored PPA names from old format to new format",
 
 				// Changelog commands
 				"dch-auto":    "Auto-update changelog with version suffix from current branch",
@@ -198,59 +200,80 @@ func ParsePPAName(ppaName string) (*PPAInfo, error) {
 	}
 
 	// Regex patterns for different PPA types
-	// Merge: noble-efibootmgr-merge-lp2133493
-	mergePattern := regexp.MustCompile(`^([a-z]+)-([a-z0-9\-]+)-merge-lp(\d+)$`)
+	// New format: <project>-<type>-lp<bug>-<release>
+	// Merge: efibootmgr-merge-lp2133493-noble
+	mergePattern := regexp.MustCompile(`^([a-z0-9\-]+)-merge-lp(\d+)-([a-z]+)$`)
 
-	// SRU: jammy-sudo-rs-sru-lp2127080-escape-equals
-	sruPattern := regexp.MustCompile(`^([a-z]+)-([a-z0-9\-]+)-sru-lp(\d+)(?:-(.+))?$`)
+	// SRU: sudo-rs-sru-lp2127080-jammy or sudo-rs-sru-lp2127080-escape-equals-jammy
+	sruPattern := regexp.MustCompile(`^([a-z0-9\-]+)-sru-lp(\d+)-(.+)-([a-z]+)$|^([a-z0-9\-]+)-sru-lp(\d+)-([a-z]+)$`)
 
-	// Normal bug: noble-sudo-rs-lp2127080-description
-	bugPattern := regexp.MustCompile(`^([a-z]+)-([a-z0-9\-]+)-lp(\d+)(?:-(.+))?$`)
+	// Normal bug: sudo-rs-lp2127080-noble or sudo-rs-lp2127080-description-noble
+	bugPattern := regexp.MustCompile(`^([a-z0-9\-]+)-lp(\d+)-(.+)-([a-z]+)$|^([a-z0-9\-]+)-lp(\d+)-([a-z]+)$`)
 
 	ppaName = strings.TrimSpace(ppaName)
 
-	// Try merge pattern first
+	// Try merge pattern first: <project>-merge-lp<bug>-<release>
 	if matches := mergePattern.FindStringSubmatch(ppaName); matches != nil {
 		return &PPAInfo{
-			Release:     matches[1],
-			Project:     matches[2],
+			Project:     matches[1],
+			BugID:       matches[2],
+			Release:     matches[3],
 			Type:        PPATypeMerge,
-			BugID:       matches[3],
 			Description: "",
 			FullName:    ppaName,
 		}, nil
 	}
 
-	// Try SRU pattern
+	// Try SRU pattern: <project>-sru-lp<bug>-<release> or <project>-sru-lp<bug>-<desc>-<release>
 	if matches := sruPattern.FindStringSubmatch(ppaName); matches != nil {
-		desc := ""
-		if len(matches) > 4 {
-			desc = matches[4]
+		// Check which pattern matched (with or without description)
+		if matches[1] != "" {
+			// Pattern with description: matches[1]=project, [2]=bug, [3]=desc, [4]=release
+			return &PPAInfo{
+				Project:     matches[1],
+				BugID:       matches[2],
+				Description: matches[3],
+				Release:     matches[4],
+				Type:        PPATypeSRU,
+				FullName:    ppaName,
+			}, nil
+		} else {
+			// Pattern without description: matches[5]=project, [6]=bug, [7]=release
+			return &PPAInfo{
+				Project:     matches[5],
+				BugID:       matches[6],
+				Release:     matches[7],
+				Type:        PPATypeSRU,
+				Description: "",
+				FullName:    ppaName,
+			}, nil
 		}
-		return &PPAInfo{
-			Release:     matches[1],
-			Project:     matches[2],
-			Type:        PPATypeSRU,
-			BugID:       matches[3],
-			Description: desc,
-			FullName:    ppaName,
-		}, nil
 	}
 
-	// Try normal bug pattern
+	// Try normal bug pattern: <project>-lp<bug>-<release> or <project>-lp<bug>-<desc>-<release>
 	if matches := bugPattern.FindStringSubmatch(ppaName); matches != nil {
-		desc := ""
-		if len(matches) > 4 {
-			desc = matches[4]
+		// Check which pattern matched
+		if matches[1] != "" {
+			// Pattern with description: matches[1]=project, [2]=bug, [3]=desc, [4]=release
+			return &PPAInfo{
+				Project:     matches[1],
+				BugID:       matches[2],
+				Description: matches[3],
+				Release:     matches[4],
+				Type:        PPATypeBug,
+				FullName:    ppaName,
+			}, nil
+		} else {
+			// Pattern without description: matches[5]=project, [6]=bug, [7]=release
+			return &PPAInfo{
+				Project:     matches[5],
+				BugID:       matches[6],
+				Release:     matches[7],
+				Type:        PPATypeBug,
+				Description: "",
+				FullName:    ppaName,
+			}, nil
 		}
-		return &PPAInfo{
-			Release:     matches[1],
-			Project:     matches[2],
-			Type:        PPATypeBug,
-			BugID:       matches[3],
-			Description: desc,
-			FullName:    ppaName,
-		}, nil
 	}
 
 	return nil, fmt.Errorf("invalid PPA name format: %s", ppaName)
@@ -284,8 +307,9 @@ func (info *PPAInfo) GetBranchName() string {
 }
 
 // CreatePPAName generates a PPA name from components
-// This is used by the gbranch command to create the branch name
-func CreatePPAName(project, bugID, ppaType, description string) (string, error) {
+// For merge type, optionalRelease should be provided (merges target future releases)
+// For SRU/bug types, optionalRelease can be empty (will use debian/changelog)
+func CreatePPAName(project, bugID, ppaType, description, optionalRelease string) (string, error) {
 	if project == "" {
 		return "", fmt.Errorf("project name is required")
 	}
@@ -299,41 +323,60 @@ func CreatePPAName(project, bugID, ppaType, description string) (string, error) 
 		return "", fmt.Errorf("invalid bug ID format: %s", bugID)
 	}
 
-	// Detect release from debian/changelog
-	release, err := DetectUbuntuRelease()
-	if err != nil {
-		return "", fmt.Errorf("could not detect Ubuntu release: %w (are you in a debian packaging directory?)", err)
-	}
-
 	// Normalize inputs
 	project = strings.ToLower(strings.TrimSpace(project))
 	ppaType = strings.ToLower(strings.TrimSpace(ppaType))
 	description = strings.ToLower(strings.TrimSpace(description))
+	optionalRelease = strings.ToLower(strings.TrimSpace(optionalRelease))
 
 	// Replace spaces with hyphens in description
 	description = strings.ReplaceAll(description, " ", "-")
+
+	// Determine which release to use
+	var release string
+	if optionalRelease != "" {
+		// Use provided release (for merges, or when overriding)
+		release = optionalRelease
+	} else {
+		// Detect release from debian/changelog (for SRU/bug)
+		detectedRelease, err := DetectUbuntuRelease()
+		if err != nil {
+			return "", fmt.Errorf("could not detect Ubuntu release: %w (are you in a debian packaging directory?)", err)
+		}
+		release = detectedRelease
+	}
+
+	// For merge type, release is required
+	if (ppaType == PPATypeMerge || ppaType == "m") && optionalRelease == "" {
+		return "", fmt.Errorf("merge branches require a release parameter (the target release)")
+	}
+
+	// For merge type, description is not allowed
+	if (ppaType == PPATypeMerge || ppaType == "m") && description != "" {
+		return "", fmt.Errorf("merge branches cannot have a description")
+	}
 
 	// Build PPA name based on type
 	var ppaName string
 	switch ppaType {
 	case PPATypeMerge, "m":
-		// Format: <release>-<project>-merge-lp<bug>
-		ppaName = fmt.Sprintf("%s-%s-merge-lp%s", release, project, bugID)
+		// Format: <project>-merge-lp<bug>-<release>
+		ppaName = fmt.Sprintf("%s-merge-lp%s-%s", project, bugID, release)
 
 	case PPATypeSRU, "s":
-		// Format: <release>-<project>-sru-lp<bug>-<desc>
+		// Format: <project>-sru-lp<bug>-<release> or <project>-sru-lp<bug>-<desc>-<release>
 		if description != "" {
-			ppaName = fmt.Sprintf("%s-%s-sru-lp%s-%s", release, project, bugID, description)
+			ppaName = fmt.Sprintf("%s-sru-lp%s-%s-%s", project, bugID, description, release)
 		} else {
-			ppaName = fmt.Sprintf("%s-%s-sru-lp%s", release, project, bugID)
+			ppaName = fmt.Sprintf("%s-sru-lp%s-%s", project, bugID, release)
 		}
 
 	case PPATypeBug, "b", "":
-		// Format: <release>-<project>-lp<bug>-<desc>
+		// Format: <project>-lp<bug>-<release> or <project>-lp<bug>-<desc>-<release>
 		if description != "" {
-			ppaName = fmt.Sprintf("%s-%s-lp%s-%s", release, project, bugID, description)
+			ppaName = fmt.Sprintf("%s-lp%s-%s-%s", project, bugID, description, release)
 		} else {
-			ppaName = fmt.Sprintf("%s-%s-lp%s", release, project, bugID)
+			ppaName = fmt.Sprintf("%s-lp%s-%s", project, bugID, release)
 		}
 
 	default:
@@ -345,7 +388,7 @@ func CreatePPAName(project, bugID, ppaType, description string) (string, error) 
 
 // ParseBranchName extracts PPA information from a git branch name
 // Branch formats:
-//   - Merge: merge-lp<bug>
+//   - Merge: merge-lp<bug>-<release> (release required, no description allowed)
 //   - SRU: sru-lp<bug>-<release>
 //   - Bug: bug-lp<bug>-<release> or lp<bug>-<release>
 func ParseBranchName(branchName string) (*PPAInfo, error) {
@@ -355,14 +398,12 @@ func ParseBranchName(branchName string) (*PPAInfo, error) {
 
 	branchName = strings.TrimSpace(branchName)
 
-	// Check for merge branch: merge-lp2133493
-	mergePattern := regexp.MustCompile(`^merge-lp(\d+)$`)
+	// Check for merge branch: merge-lp2133493-noble (requires release)
+	mergePattern := regexp.MustCompile(`^merge-lp(\d+)-([a-z]+)$`)
 	if matches := mergePattern.FindStringSubmatch(branchName); matches != nil {
-		// For merge branches, we need to detect the release from debian/changelog
-		release, err := DetectUbuntuRelease()
-		if err != nil {
-			return nil, fmt.Errorf("could not detect release for merge branch: %w", err)
-		}
+		// For merge branches, use the release from branch name
+		bugID := matches[1]
+		release := matches[2]
 
 		// Get project name from debian/control
 		project, err := DetectProjectName()
@@ -370,14 +411,14 @@ func ParseBranchName(branchName string) (*PPAInfo, error) {
 			return nil, fmt.Errorf("could not detect project name: %w", err)
 		}
 
-		// Reconstruct PPA name for merge
-		ppaName := fmt.Sprintf("%s-%s-merge-lp%s", release, project, matches[1])
+		// Construct PPA name: <project>-merge-lp<bug>-<release>
+		ppaName := fmt.Sprintf("%s-merge-lp%s-%s", project, bugID, release)
 
 		return &PPAInfo{
 			Release:     release,
 			Project:     project,
 			Type:        PPATypeMerge,
-			BugID:       matches[1],
+			BugID:       bugID,
 			Description: "",
 			FullName:    ppaName,
 		}, nil
@@ -386,19 +427,22 @@ func ParseBranchName(branchName string) (*PPAInfo, error) {
 	// Check for SRU branch: sru-lp2127080-jammy
 	sruPattern := regexp.MustCompile(`^sru-lp(\d+)-([a-z]+)$`)
 	if matches := sruPattern.FindStringSubmatch(branchName); matches != nil {
+		bugID := matches[1]
+		release := matches[2]
+		
 		project, err := DetectProjectName()
 		if err != nil {
 			return nil, fmt.Errorf("could not detect project name: %w", err)
 		}
 
-		// Reconstruct PPA name for SRU
-		ppaName := fmt.Sprintf("%s-%s-sru-lp%s", matches[2], project, matches[1])
+		// Construct PPA name: <project>-sru-lp<bug>-<release>
+		ppaName := fmt.Sprintf("%s-sru-lp%s-%s", project, bugID, release)
 
 		return &PPAInfo{
-			Release:     matches[2],
+			Release:     release,
 			Project:     project,
 			Type:        PPATypeSRU,
-			BugID:       matches[1],
+			BugID:       bugID,
 			Description: "",
 			FullName:    ppaName,
 		}, nil
@@ -407,19 +451,22 @@ func ParseBranchName(branchName string) (*PPAInfo, error) {
 	// Check for bug branch: bug-lp2127080-jammy or lp2127080-jammy
 	bugPattern := regexp.MustCompile(`^(?:bug-)?lp(\d+)-([a-z]+)$`)
 	if matches := bugPattern.FindStringSubmatch(branchName); matches != nil {
+		bugID := matches[1]
+		release := matches[2]
+		
 		project, err := DetectProjectName()
 		if err != nil {
 			return nil, fmt.Errorf("could not detect project name: %w", err)
 		}
 
-		// Reconstruct PPA name for bug
-		ppaName := fmt.Sprintf("%s-%s-lp%s", matches[2], project, matches[1])
+		// Construct PPA name: <project>-lp<bug>-<release>
+		ppaName := fmt.Sprintf("%s-lp%s-%s", project, bugID, release)
 
 		return &PPAInfo{
-			Release:     matches[2],
+			Release:     release,
 			Project:     project,
 			Type:        PPATypeBug,
-			BugID:       matches[1],
+			BugID:       bugID,
 			Description: "",
 			FullName:    ppaName,
 		}, nil

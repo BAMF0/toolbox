@@ -1,0 +1,273 @@
+.TH TB-CONFIG 5 "December 2025" "ToolBox 1.0" "File Formats"
+.SH NAME
+toolbox.yaml, config.yaml \- ToolBox configuration file format
+.SH SYNOPSIS
+.I .toolbox.yaml
+.br
+.I ~/.toolbox/config.yaml
+.SH DESCRIPTION
+ToolBox uses YAML configuration files to define contexts, commands, and their mappings. Configuration files allow you to customize existing contexts or create entirely new ones without modifying ToolBox code.
+.SH FILE LOCATIONS
+Configuration files are loaded in priority order:
+.TP
+1.
+File specified with \fB\-\-config\fR flag
+.TP
+2.
+\fB.toolbox.yaml\fR in current directory (project-specific)
+.TP
+3.
+\fB~/.toolbox/config.yaml\fR in home directory (user-global)
+.TP
+4.
+Built-in defaults
+.PP
+Settings from higher-priority files override those from lower-priority files.
+.SH CONFIGURATION FORMAT
+The configuration file is in YAML format with the following structure:
+.PP
+.in +4n
+.nf
+contexts:
+  <context-name>:
+    commands:
+      <command-name>: "<shell-command>"
+    descriptions:
+      <command-name>: "<description>"
+.fi
+.in
+.SH EXAMPLES
+.SS Basic Context Definition
+Define a custom context with commands:
+.PP
+.in +4n
+.nf
+contexts:
+  myproject:
+    commands:
+      build: "make build"
+      test: "make test"
+      deploy: "make deploy"
+    descriptions:
+      build: "Build the project"
+      test: "Run all tests"
+      deploy: "Deploy to production"
+.fi
+.in
+.SS Override Built-in Context
+Customize an existing context (e.g., Node.js):
+.PP
+.in +4n
+.nf
+contexts:
+  node:
+    commands:
+      build: "npm run build:prod"
+      test: "npm test -- --coverage"
+      deploy: "npm run deploy"
+      custom: "npm run custom-script"
+.fi
+.in
+.SS Docker Compose Context
+Define commands for Docker Compose projects:
+.PP
+.in +4n
+.nf
+contexts:
+  docker-compose:
+    commands:
+      up: "docker-compose up -d"
+      down: "docker-compose down"
+      logs: "docker-compose logs -f"
+      restart: "docker-compose restart"
+      ps: "docker-compose ps"
+.fi
+.in
+.SS Multiple Contexts
+Define multiple contexts in one file:
+.PP
+.in +4n
+.nf
+contexts:
+  node:
+    commands:
+      build: "npm run build:prod"
+      test: "npm test -- --coverage"
+  
+  python:
+    commands:
+      test: "pytest -v --cov"
+      lint: "ruff check . && mypy ."
+      fmt: "black . && isort ."
+  
+  custom:
+    commands:
+      start: "./start.sh"
+      stop: "./stop.sh"
+.fi
+.in
+.SS Project-Specific Configuration
+Create \fB.toolbox.yaml\fR in your project root for project-specific commands:
+.PP
+.in +4n
+.nf
+# .toolbox.yaml - Project-specific config
+contexts:
+  go:
+    commands:
+      build: "go build -o bin/myapp ./cmd/myapp"
+      run: "go run ./cmd/myapp"
+      test: "go test ./... -v -race"
+.fi
+.in
+.SH CONTEXT NAMES
+Context names can be:
+.TP
+\(bu
+Built-in contexts: node, go, python, rust, make, docker, kubernetes, etc.
+.TP
+\(bu
+Plugin-provided contexts: ubuntu-packaging, helm, etc.
+.TP
+\(bu
+Custom contexts: Any name you choose
+.PP
+Custom context names should be lowercase and use hyphens for word separation (e.g., my-custom-context).
+.SH COMMAND DEFINITIONS
+Commands are defined as key-value pairs:
+.PP
+.in +4n
+.nf
+commands:
+  <command-name>: "<shell-command>"
+.fi
+.in
+.PP
+Where:
+.TP
+.B command-name
+The short name you'll use with 'tb' (e.g., 'build', 'test')
+.TP
+.B shell-command
+The actual shell command to execute (can include pipes, &&, etc.)
+.SH DESCRIPTIONS
+Optional descriptions for commands:
+.PP
+.in +4n
+.nf
+descriptions:
+  <command-name>: "<description>"
+.fi
+.in
+.PP
+Descriptions appear in help output and shell completion.
+.SH VARIABLES
+Command definitions support basic variable substitution:
+.TP
+.B $PWD
+Current working directory
+.TP
+.B $HOME
+User's home directory
+.TP
+.B ${VAR}
+Environment variables
+.PP
+Example:
+.PP
+.in +4n
+.nf
+contexts:
+  custom:
+    commands:
+      deploy: "scp build/* user@server:$HOME/app/"
+.fi
+.in
+.SH SHELL SYNTAX
+Commands are executed through the system shell, so you can use:
+.TP
+\(bu
+Pipes: |
+.TP
+\(bu
+Redirects: >, >>, <
+.TP
+\(bu
+Command chaining: &&, ||, ;
+.TP
+\(bu
+Subshells: $(), ``
+.PP
+Example:
+.PP
+.in +4n
+.nf
+contexts:
+  node:
+    commands:
+      test-and-build: "npm test && npm run build"
+      deploy: "npm run build | tar czf - | ssh server 'tar xzf -'"
+.fi
+.in
+.SH ADVANCED EXAMPLES
+.SS Conditional Commands
+Use shell conditionals in commands:
+.PP
+.in +4n
+.nf
+contexts:
+  node:
+    commands:
+      build: "[ -f .env ] && source .env; npm run build"
+.fi
+.in
+.SS Multi-line Commands
+YAML supports multi-line strings:
+.PP
+.in +4n
+.nf
+contexts:
+  custom:
+    commands:
+      deploy: |
+        npm run build && \\
+        rsync -av build/ server:/var/www/ && \\
+        ssh server 'systemctl restart app'
+.fi
+.in
+.SS Context with Scripts
+Reference project scripts:
+.PP
+.in +4n
+.nf
+contexts:
+  custom:
+    commands:
+      setup: "./scripts/setup.sh"
+      test: "./scripts/test.sh"
+      deploy: "./scripts/deploy.sh production"
+.fi
+.in
+.SH FILES
+.TP
+.I .toolbox.yaml
+Project-specific configuration (highest priority)
+.TP
+.I ~/.toolbox/config.yaml
+User global configuration
+.TP
+.I ~/.cache/toolbox/
+Cache directory for temporary files
+.SH SEE ALSO
+.BR tb (1),
+.BR yaml (7)
+.PP
+Configuration Guide:
+.br
+https://github.com/bamf0/toolbox/blob/main/docs/configuration.md
+.PP
+User Guide:
+.br
+https://github.com/bamf0/toolbox/blob/main/docs/user-guide.md
+.SH AUTHOR
+Written by the ToolBox contributors.
