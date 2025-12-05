@@ -51,12 +51,15 @@ func Execute() error {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "cfg", "", "config file (default: .toolbox.yaml or ~/.toolbox/config.yaml)")
-	rootCmd.PersistentFlags().StringVar(&forceCtx, "ctx", "", "force a specific context (node, go, python, etc.)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: .toolbox.yaml or ~/.toolbox/config.yaml)")
+	rootCmd.PersistentFlags().StringVar(&forceCtx, "context", "", "force a specific context (node, go, python, etc.)")
 	rootCmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "print command without executing")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().DurationVar(&commandTimeout, "timeout", DefaultCommandTimeout, "command execution timeout")
 
+	// Allow unknown commands to be handled dynamically
+	rootCmd.Args = cobra.ArbitraryArgs
+	
 	// Dynamic command handler - intercepts unknown commands
 	rootCmd.RunE = handleDynamicCommand
 }
@@ -81,6 +84,16 @@ func handleDynamicCommand(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
+	// Merge plugin contexts into config
+	pm := getPluginManager()
+	pluginContexts := pm.GetContexts()
+	for ctxName, ctxConfig := range pluginContexts {
+		// Only add if not already in config (config takes precedence)
+		if _, exists := cfg.Contexts[ctxName]; !exists {
+			cfg.Contexts[ctxName] = ctxConfig
+		}
+	}
+
 	// Detect context (or use forced context)
 	var detectedCtx string
 	if forceCtx != "" {
@@ -89,13 +102,24 @@ func handleDynamicCommand(cmd *cobra.Command, args []string) error {
 			fmt.Printf("Using forced context: %s\n", detectedCtx)
 		}
 	} else {
-		detector := contextpkg.NewDetector()
-		detectedCtx, err = detector.Detect(".")
-		if err != nil {
-			return fmt.Errorf("failed to detect context: %w", err)
-		}
-		if verbose {
-			fmt.Printf("Detected context: %s\n", detectedCtx)
+		// Try plugin-based detection first
+		pluginCtx, pluginName, foundByPlugin := pm.DetectContext(".")
+		
+		if foundByPlugin {
+			detectedCtx = pluginCtx
+			if verbose {
+				fmt.Printf("Detected context: %s (via plugin: %s)\n", detectedCtx, pluginName)
+			}
+		} else {
+			// Fall back to built-in detection
+			detector := contextpkg.NewDetector()
+			detectedCtx, err = detector.Detect(".")
+			if err != nil {
+				return fmt.Errorf("failed to detect context: %w", err)
+			}
+			if verbose {
+				fmt.Printf("Detected context: %s\n", detectedCtx)
+			}
 		}
 	}
 
