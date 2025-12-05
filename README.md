@@ -1,4 +1,4 @@
-# ToolBox (tb) 🧰
+# ToolBox (tb)
 
 (Built as a test project with GitHub Copilot)
 
@@ -19,7 +19,7 @@ tb build           # Works in any project!
 
 ---
 
-## ⚡ Quick Demo
+## Quick Demo
 
 ```bash
 # Build the tool
@@ -36,23 +36,23 @@ $ tb test --dry-run
 Context: go
 Command: go test ./...
 
-# It just works! 🎉
+# It just works!
 ```
 
 ---
 
-## ✨ Features
+## Features
 
-- 🔍 **Auto-Detection**: Identifies project type from marker files (package.json, go.mod, etc.)
-- 🎯 **Smart Aliasing**: Same command works across different project types
-- ⚙️ **Configurable**: YAML-based config with sensible defaults
-- 🔧 **Extensible**: Add custom contexts without touching code
-- 🌍 **Cross-platform**: Linux, macOS, and Windows
-- 📦 **Zero Config**: Works out-of-the-box for common projects
+- **Auto-Detection**: Identifies project type from marker files (package.json, go.mod, etc.)
+- **Smart Aliasing**: Same command works across different project types
+- **Configurable**: YAML-based config with sensible defaults
+- **Extensible**: Add custom contexts without touching code
+- **Cross-platform**: Linux, macOS, and Windows
+- **Zero Config**: Works out-of-the-box for common projects
 
 ---
 
-## 📥 Installation
+## Installation
 
 ### From Source
 
@@ -74,7 +74,7 @@ Download from [Releases](https://github.com/bamf0/toolbox/releases)
 
 ---
 
-## 🚀 Usage
+## Usage
 
 ### Basic Commands
 
@@ -110,7 +110,7 @@ tb build --context python
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 ### Quick Customization
 
@@ -151,7 +151,7 @@ contexts:
 3. `~/.toolbox/config.yaml` in home directory
 4. Built-in defaults
 
-> **💡 Tip**: For Go projects with a specific structure (like `cmd/myapp/`), customize in `.toolbox.yaml`:
+> **Tip**: For Go projects with a specific structure (like `cmd/myapp/`), customize in `.toolbox.yaml`:
 > ```yaml
 > contexts:
 >   go:
@@ -162,7 +162,7 @@ contexts:
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ToolBox follows a clean, modular architecture:
 
@@ -205,35 +205,34 @@ See [STRUCTURE.md](STRUCTURE.md) for detailed architecture documentation.
 
 ---
 
-## 🔮 Future Enhancements
+## Future Enhancements
 
 This MVP provides a solid foundation. Planned features include:
 
-- 🔌 **Plugin System**: Third-party context plugins
-- 🎨 **Interactive Mode**: Command selection UI
-- 📝 **Templates**: Parameterized commands with variables
-- 📊 **History**: Track and reuse frequent commands
-- 🌍 **Environments**: Different commands for dev/staging/prod
-- ⚡ **Shell Completion**: Tab completion for commands
-- 🔄 **Hooks**: Pre/post command execution
-- 🚀 **CI/CD Integration**: Generate pipeline configs
+- **Plugin System**: Third-party context plugins
+- **Interactive Mode**: Command selection UI
+- **Templates**: Parameterized commands with variables
+- **History**: Track and reuse frequent commands
+- **Environments**: Different commands for dev/staging/prod
+- **Shell Completion**: Tab completion for commands
+- **Hooks**: Pre/post command execution
+- **CI/CD Integration**: Generate pipeline configs
 
 See [EXTENSIONS.md](EXTENSIONS.md) for detailed roadmap and extension points.
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 - **[README.md](README.md)** - This file, project overview
 - **[BUILD.md](BUILD.md)** - Build, installation, and usage guide
 - **[STRUCTURE.md](STRUCTURE.md)** - Architecture and design details  
 - **[EXTENSIONS.md](EXTENSIONS.md)** - Future features and extension points
 - **[QUICKREF.md](QUICKREF.md)** - Command reference and examples
-- **[SUMMARY.md](SUMMARY.md)** - Project summary and statistics
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Here's how:
 
@@ -258,13 +257,13 @@ contexts:
 
 ---
 
-## 📄 License
+## License
 
 [MIT License](LICENSE) - feel free to use in your projects!
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Built with [Cobra](https://github.com/spf13/cobra) - excellent CLI framework
 - Inspired by Make, Task, and Just - but context-aware
@@ -272,14 +271,10 @@ contexts:
 
 ---
 
-## 📞 Support
+## Support
 
-- 🐛 **Issues**: [GitHub Issues](https://github.com/bamf0/toolbox/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/bamf0/toolbox/discussions)  
-
----
-
-**Made with ❤️ by developers, for developers**
+- **Issues**: [GitHub Issues](https://github.com/bamf0/toolbox/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/bamf0/toolbox/discussions)  
 
 ---
 
@@ -290,8 +285,4 @@ contexts:
 - [Configuration](#️-configuration)
 - [Documentation](#-documentation)
 - [Contributing](#-contributing)
-
----
-
-*Star ⭐ this repo if you find it useful!*
 
